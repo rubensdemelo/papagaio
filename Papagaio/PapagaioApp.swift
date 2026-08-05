@@ -2,7 +2,13 @@ import SwiftUI
 
 @main
 struct PapagaioApp: App {
-    @StateObject private var sessionController = FakeSessionController()
+    @StateObject private var sessionController: LiveSessionController
+
+    init() {
+        _sessionController = StateObject(
+            wrappedValue: PapagaioCompositionRoot.makeLiveController()
+        )
+    }
 
     var body: some Scene {
         WindowGroup {

@@ -487,7 +487,7 @@ final class SessionLifecycleTests: XCTestCase {
 
 }
 
-private final class TestStream<Element: Sendable>: @unchecked Sendable {
+final class TestStream<Element: Sendable>: @unchecked Sendable {
     let stream: AsyncThrowingStream<Element, any Error>
     private let continuation: AsyncThrowingStream<Element, any Error>.Continuation
 
@@ -508,7 +508,7 @@ private final class TestStream<Element: Sendable>: @unchecked Sendable {
     }
 }
 
-private actor TestSessionAudioCapture: SessionAudioCapture {
+actor TestSessionAudioCapture: SessionAudioCapture {
     private let configuredPermission: MicrophonePermission
     private let configuredAvailability: Availability
     private let startFailure: PipelineFailure?
@@ -563,7 +563,7 @@ private actor TestSessionAudioCapture: SessionAudioCapture {
     func lastStream() -> TestStream<AudioChunk>? { currentStream }
 }
 
-private actor TestSessionSpeechRecognizer: SessionSpeechRecognizer {
+actor TestSessionSpeechRecognizer: SessionSpeechRecognizer {
     private let configuredAvailability: SpeechRecognitionAvailability
     private let recognizeFailure: PipelineFailure?
     private var currentStream: TestStream<FinalizedSpeechSegment>?
@@ -608,7 +608,7 @@ private actor TestSessionSpeechRecognizer: SessionSpeechRecognizer {
     func lastStream() -> TestStream<FinalizedSpeechSegment>? { currentStream }
 }
 
-private final class TestMeetingContextFactory: MeetingContextFactory, @unchecked Sendable {
+final class TestMeetingContextFactory: MeetingContextFactory, @unchecked Sendable {
     private let lock = NSLock()
     private var createdContexts: [TestMeetingContext] = []
 
@@ -627,7 +627,7 @@ private final class TestMeetingContextFactory: MeetingContextFactory, @unchecked
     }
 }
 
-private actor TestMeetingContext: RollingMeetingContext {
+actor TestMeetingContext: RollingMeetingContext {
     private var pendingBatches: [MeetingContextBatch] = []
     private var waiting: CheckedContinuation<MeetingContextBatch?, any Error>?
     private var segments: [FinalizedSpeechSegment] = []
@@ -687,12 +687,14 @@ private actor TestMeetingContext: RollingMeetingContext {
     func storedSegments() -> [FinalizedSpeechSegment] { segments }
 }
 
-private actor TestSessionInsightGenerator: SessionInsightGenerator {
+actor TestSessionInsightGenerator: SessionInsightGenerator {
     private let configuredAvailability: Availability
     private let startFailure: PipelineFailure?
     private let delay: Duration
     private let updates: [InsightUpdate]
+    private let updateProvider: (@Sendable (MeetingContextBatch) -> [InsightUpdate])?
     private let generateFailure: PipelineFailure?
+    private var remainingGenerateFailures: Int
     private let ignoresCancellation: Bool
     private var started = false
     private var starts = 0
@@ -706,14 +708,18 @@ private actor TestSessionInsightGenerator: SessionInsightGenerator {
         startFailure: PipelineFailure? = nil,
         delay: Duration = .zero,
         updates: [InsightUpdate] = [],
+        updateProvider: (@Sendable (MeetingContextBatch) -> [InsightUpdate])? = nil,
         generateFailure: PipelineFailure? = nil,
+        generateFailureCount: Int = 1,
         ignoresCancellation: Bool = false
     ) {
         configuredAvailability = availability
         self.startFailure = startFailure
         self.delay = delay
         self.updates = updates
+        self.updateProvider = updateProvider
         self.generateFailure = generateFailure
+        remainingGenerateFailures = generateFailureCount
         self.ignoresCancellation = ignoresCancellation
     }
 
@@ -729,7 +735,7 @@ private actor TestSessionInsightGenerator: SessionInsightGenerator {
         started = true
     }
 
-    func generate(from _: MeetingContextBatch) async throws(PipelineFailure) -> [InsightUpdate] {
+    func generate(from batch: MeetingContextBatch) async throws(PipelineFailure) -> [InsightUpdate] {
         guard started else {
             throw .stage(.insightGeneration, .invalidState)
         }
@@ -744,9 +750,12 @@ private actor TestSessionInsightGenerator: SessionInsightGenerator {
             }
         }
         if let generateFailure {
-            throw generateFailure
+            if remainingGenerateFailures > 0 {
+                remainingGenerateFailures -= 1
+                throw generateFailure
+            }
         }
-        return updates
+        return updateProvider?(batch) ?? updates
     }
 
     func stop() async {
@@ -766,7 +775,7 @@ private actor TestSessionInsightGenerator: SessionInsightGenerator {
 }
 
 @MainActor
-private final class TestSessionInsightState: InsightState {
+final class TestSessionInsightState: InsightState {
     private let applyFailure: PipelineFailure?
     private(set) var cards: [InsightCard] = []
     private(set) var appliedContexts: [MeetingContextBatch] = []

@@ -36,6 +36,9 @@
 		A1000001000000000000001C /* SessionOrchestration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016 /* SessionOrchestration.swift */; };
 		A1000001000000000000001D /* SessionOrchestration.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016 /* SessionOrchestration.swift */; };
 		A1000001000000000000001E /* SessionLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017 /* SessionLifecycleTests.swift */; };
+		A1000001000000000000001F /* CompositionRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018 /* CompositionRoot.swift */; };
+		A10000010000000000000020 /* CompositionRoot.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018 /* CompositionRoot.swift */; };
+		A10000010000000000000021 /* VerticalSliceIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019 /* VerticalSliceIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +65,8 @@
 		A20000010000000000000015 /* SpeechRecognitionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionAdapterTests.swift; sourceTree = "<group>"; };
 		A20000010000000000000016 /* SessionOrchestration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionOrchestration.swift; sourceTree = "<group>"; };
 		A20000010000000000000017 /* SessionLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLifecycleTests.swift; sourceTree = "<group>"; };
+		A20000010000000000000018 /* CompositionRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionRoot.swift; sourceTree = "<group>"; };
+		A20000010000000000000019 /* VerticalSliceIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerticalSliceIntegrationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +119,7 @@
 				A20000010000000000000010 /* MicrophoneCapture.swift */,
 				A20000010000000000000013 /* SpeechRecognitionAdapter.swift */,
 				A20000010000000000000016 /* SessionOrchestration.swift */,
+				A20000010000000000000018 /* CompositionRoot.swift */,
 			);
 			path = Papagaio;
 			sourceTree = "<group>";
@@ -128,6 +134,7 @@
 				A20000010000000000000012 /* MicrophoneCaptureTests.swift */,
 				A20000010000000000000015 /* SpeechRecognitionAdapterTests.swift */,
 				A20000010000000000000017 /* SessionLifecycleTests.swift */,
+				A20000010000000000000019 /* VerticalSliceIntegrationTests.swift */,
 			);
 			path = PapagaioTests;
 			sourceTree = "<group>";
@@ -245,6 +252,7 @@
 				A10000010000000000000012 /* MicrophoneCapture.swift in Sources */,
 				A10000010000000000000017 /* SpeechRecognitionAdapter.swift in Sources */,
 				A1000001000000000000001C /* SessionOrchestration.swift in Sources */,
+				A1000001000000000000001F /* CompositionRoot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,6 +275,8 @@
 				A1000001000000000000001A /* SpeechRecognitionAdapterTests.swift in Sources */,
 				A1000001000000000000001D /* SessionOrchestration.swift in Tests */,
 				A1000001000000000000001E /* SessionLifecycleTests.swift in Sources */,
+				A10000010000000000000020 /* CompositionRoot.swift in Tests */,
+				A10000010000000000000021 /* VerticalSliceIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

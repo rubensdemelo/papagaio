@@ -59,6 +59,7 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
     private let insightState: any InsightState
 
     private(set) var status: SessionStatus = .stopped
+    private(set) var failure: PipelineFailure?
 
     private var nextSessionID: UInt64 = 0
     private var activeSessionID: UInt64?
@@ -116,6 +117,7 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
         activeSessionID = sessionID
         activeContext = contextFactory.makeContext()
         insightState.reset()
+        failure = nil
         status = .checkingAvailability
 
         do {
@@ -286,8 +288,10 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
 
         switch kind {
         case .failure(let failure):
+            self.failure = failure
             status = status(for: failure)
         case .stop, .cancel:
+            failure = nil
             status = .stopped
         }
     }
