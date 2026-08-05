@@ -23,6 +23,11 @@
 		A1000001000000000000000F /* ApplicationShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000E /* ApplicationShell.swift */; };
 		A10000010000000000000010 /* ApplicationShell.swift in Tests */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000E /* ApplicationShell.swift */; };
 		A10000010000000000000011 /* ApplicationShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000F /* ApplicationShellTests.swift */; };
+		A10000010000000000000012 /* MicrophoneCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000010 /* MicrophoneCapture.swift */; };
+		A10000010000000000000013 /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000010000000000000011 /* AVFAudio.framework */; };
+		A10000010000000000000014 /* AVFAudio.framework in Test Frameworks */ = {isa = PBXBuildFile; fileRef = A20000010000000000000011 /* AVFAudio.framework */; };
+		A10000010000000000000015 /* MicrophoneCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000012 /* MicrophoneCaptureTests.swift */; };
+		A10000010000000000000016 /* MicrophoneCapture.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000010 /* MicrophoneCapture.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +46,9 @@
 		A2000001000000000000000D /* FoundationModelsAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationModelsAdapterTests.swift; sourceTree = "<group>"; };
 		A2000001000000000000000E /* ApplicationShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationShell.swift; sourceTree = "<group>"; };
 		A2000001000000000000000F /* ApplicationShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationShellTests.swift; sourceTree = "<group>"; };
+		A20000010000000000000010 /* MicrophoneCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneCapture.swift; sourceTree = "<group>"; };
+		A20000010000000000000011 /* AVFAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFAudio.framework; path = System/Library/Frameworks/AVFAudio.framework; sourceTree = SDKROOT; };
+		A20000010000000000000012 /* MicrophoneCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneCaptureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,6 +57,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000001000000000000000C /* FoundationModels.framework in Frameworks */,
+				A10000010000000000000013 /* AVFAudio.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,6 +66,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000001000000000000000D /* FoundationModels.framework in Test Frameworks */,
+				A10000010000000000000014 /* AVFAudio.framework in Test Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,6 +80,7 @@
 				A40000010000000000000003 /* PapagaioTests */,
 				A40000010000000000000004 /* Products */,
 				A2000001000000000000000C /* FoundationModels.framework */,
+				A20000010000000000000011 /* AVFAudio.framework */,
 			);
 			sourceTree = "<group>";
 		};
@@ -84,6 +95,7 @@
 				A20000010000000000000009 /* DeterministicDoubles.swift */,
 				A2000001000000000000000B /* FoundationModelsAdapter.swift */,
 				A2000001000000000000000E /* ApplicationShell.swift */,
+				A20000010000000000000010 /* MicrophoneCapture.swift */,
 			);
 			path = Papagaio;
 			sourceTree = "<group>";
@@ -95,6 +107,7 @@
 				A2000001000000000000000A /* CoreContractsTests.swift */,
 				A2000001000000000000000D /* FoundationModelsAdapterTests.swift */,
 				A2000001000000000000000F /* ApplicationShellTests.swift */,
+				A20000010000000000000012 /* MicrophoneCaptureTests.swift */,
 			);
 			path = PapagaioTests;
 			sourceTree = "<group>";
@@ -209,6 +222,7 @@
 				A10000010000000000000004 /* CoreContracts.swift in Sources */,
 				A1000001000000000000000A /* FoundationModelsAdapter.swift in Sources */,
 				A1000001000000000000000F /* ApplicationShell.swift in Sources */,
+				A10000010000000000000012 /* MicrophoneCapture.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,6 +239,8 @@
 				A1000001000000000000000E /* FoundationModelsAdapterTests.swift in Sources */,
 				A10000010000000000000010 /* ApplicationShell.swift in Tests */,
 				A10000010000000000000011 /* ApplicationShellTests.swift in Sources */,
+				A10000010000000000000016 /* MicrophoneCapture.swift in Tests */,
+				A10000010000000000000015 /* MicrophoneCaptureTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

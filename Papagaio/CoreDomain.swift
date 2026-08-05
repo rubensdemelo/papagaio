@@ -72,6 +72,7 @@ enum Availability: Sendable, Equatable {
 }
 
 enum UnavailableReason: Sendable, Equatable {
+    case microphonePermissionUndetermined
     case microphonePermissionDenied
     case audioInputUnavailable
     case speechRecognitionUnavailable
