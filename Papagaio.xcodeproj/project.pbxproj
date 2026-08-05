@@ -9,6 +9,12 @@
 /* Begin PBXBuildFile section */
 		A10000010000000000000001 /* PapagaioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* PapagaioApp.swift */; };
 		A10000010000000000000002 /* PapagaioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000005 /* PapagaioTests.swift */; };
+		A10000010000000000000003 /* CoreDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007 /* CoreDomain.swift */; };
+		A10000010000000000000004 /* CoreContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008 /* CoreContracts.swift */; };
+		A10000010000000000000006 /* CoreContractsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000A /* CoreContractsTests.swift */; };
+		A10000010000000000000007 /* CoreDomain.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007 /* CoreDomain.swift */; };
+		A10000010000000000000008 /* CoreContracts.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008 /* CoreContracts.swift */; };
+		A10000010000000000000009 /* DeterministicDoubles.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000009 /* DeterministicDoubles.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,6 +24,10 @@
 		A20000010000000000000004 /* Papagaio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Papagaio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000010000000000000005 /* PapagaioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PapagaioTests.swift; sourceTree = "<group>"; };
 		A20000010000000000000006 /* PapagaioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PapagaioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000007 /* CoreDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDomain.swift; sourceTree = "<group>"; };
+		A20000010000000000000008 /* CoreContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreContracts.swift; sourceTree = "<group>"; };
+		A20000010000000000000009 /* DeterministicDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeterministicDoubles.swift; sourceTree = "<group>"; };
+		A2000001000000000000000A /* CoreContractsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreContractsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +63,9 @@
 				A20000010000000000000001 /* PapagaioApp.swift */,
 				A20000010000000000000002 /* Info.plist */,
 				A20000010000000000000003 /* Papagaio.entitlements */,
+				A20000010000000000000007 /* CoreDomain.swift */,
+				A20000010000000000000008 /* CoreContracts.swift */,
+				A20000010000000000000009 /* DeterministicDoubles.swift */,
 			);
 			path = Papagaio;
 			sourceTree = "<group>";
@@ -61,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000010000000000000005 /* PapagaioTests.swift */,
+				A2000001000000000000000A /* CoreContractsTests.swift */,
 			);
 			path = PapagaioTests;
 			sourceTree = "<group>";
@@ -171,6 +185,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000010000000000000001 /* PapagaioApp.swift in Sources */,
+				A10000010000000000000003 /* CoreDomain.swift in Sources */,
+				A10000010000000000000004 /* CoreContracts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -179,6 +195,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000010000000000000002 /* PapagaioTests.swift in Sources */,
+				A10000010000000000000006 /* CoreContractsTests.swift in Sources */,
+				A10000010000000000000007 /* CoreDomain.swift in Tests */,
+				A10000010000000000000008 /* CoreContracts.swift in Tests */,
+				A10000010000000000000009 /* DeterministicDoubles.swift in Tests */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,7 +268,6 @@
 		A80000010000000000000005 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.papagaio.tests;
@@ -263,7 +282,6 @@
 		A80000010000000000000006 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.papagaio.tests;
@@ -307,5 +325,6 @@
 		};
 /* End XCConfigurationList section */
 	};
+
 	rootObject = A70000010000000000000001 /* Project object */;
 }

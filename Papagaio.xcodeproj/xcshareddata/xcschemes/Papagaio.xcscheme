@@ -20,6 +20,20 @@
                ReferencedContainer = "container:Papagaio.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A50000010000000000000002"
+               BuildableName = "PapagaioTests.xctest"
+               BlueprintName = "PapagaioTests"
+               ReferencedContainer = "container:Papagaio.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
