@@ -6,9 +6,7 @@ The insight stream is the product. Papagaio is not a transcription app, note-tak
 
 ## Status
 
-Papagaio is in the pre-implementation design stage. The product definition, initial architecture, and MVP roadmap are documented; the macOS application has not been created yet.
-
-The first milestone is a native vertical slice that turns microphone audio into temporary text and then into structured insight cards using Apple frameworks.
+M1-00 provides the native macOS 26+ SwiftUI application and unit-test scaffold. Later milestones will add the temporary audio, speech, model, and insight pipeline.
 
 ## MVP experience
 
@@ -96,6 +94,31 @@ Meeting data is ephemeral in the MVP:
 
 ## Development
 
-There is no buildable application target yet. Development begins with the native vertical slice described in the first roadmap milestone.
+The project uses Xcode 26.6, Swift 6, and a macOS 26 deployment target. Build and test from the repository root:
 
-When implementation starts, build and test instructions will live here. Verified progress is tracked in [the roadmap](docs/ROADMAP.md); work must not be marked complete until the corresponding build and tests pass.
+```sh
+xcodebuild \
+  -project Papagaio.xcodeproj \
+  -scheme Papagaio \
+  -configuration Debug \
+  -destination 'platform=macOS' \
+  -derivedDataPath .build/DerivedData \
+  build
+
+xcodebuild \
+  -project Papagaio.xcodeproj \
+  -scheme Papagaio \
+  -configuration Release \
+  -destination 'platform=macOS' \
+  -derivedDataPath .build/DerivedData \
+  build
+
+xcodebuild \
+  -project Papagaio.xcodeproj \
+  -scheme Papagaio \
+  -destination 'platform=macOS' \
+  -derivedDataPath .build/DerivedData \
+  test
+```
+
+M1-00 is limited to the placeholder window, project configuration, and test-bundle smoke test. Verified progress is tracked in [the roadmap](docs/ROADMAP.md); work must not be marked complete until the corresponding acceptance criteria pass.
