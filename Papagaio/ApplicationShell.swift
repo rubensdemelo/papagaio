@@ -440,6 +440,8 @@ struct EmptyStatePresentation: Equatable {
 private extension UnavailableReason {
     var displayMessage: String {
         switch self {
+        case .microphonePermissionUndetermined:
+            "Microphone permission has not been requested yet."
         case .microphonePermissionDenied:
             "Microphone access is required to listen."
         case .audioInputUnavailable:
