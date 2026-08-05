@@ -269,6 +269,7 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
     private var outputContinuation: FinalizedSpeechStream.Continuation?
     private var processingTask: Task<Void, Never>?
     private var resultTask: Task<Void, Never>?
+    private var teardownGate: SessionTeardownGate?
     private var isStarting = false
 
     init(
@@ -307,6 +308,7 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
         let session = sessionFactory.makeSession(
             localeIdentifier: resolvedLocaleIdentifier
         )
+        let teardownGate = SessionTeardownGate()
         var inputContinuation: SpeechAudioInputStream.Continuation?
         let inputStream = SpeechAudioInputStream { continuation in
             inputContinuation = continuation
@@ -320,7 +322,10 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
             bufferingPolicy: .bufferingOldest(16)
         ) { continuation in
             outputContinuation = continuation
-            continuation.onTermination = { @Sendable [weak self] _ in
+            continuation.onTermination = { @Sendable [weak self] termination in
+                guard case .cancelled = termination else {
+                    return
+                }
                 Task {
                     await self?.cancel()
                 }
@@ -351,14 +356,16 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
                     )
                     sequenceNumber &+= 1
                 }
-                outputContinuation.finish()
             } catch let failure as PipelineFailure {
+                await teardownGate.teardown(session: session)
                 outputContinuation.finish(throwing: failure)
             } catch is CancellationError {
+                await teardownGate.teardown(session: session)
                 outputContinuation.finish(throwing: PipelineFailure.cancelled)
             } catch {
+                await teardownGate.teardown(session: session)
                 outputContinuation.finish(
-                        throwing: PipelineFailure.stage(.speechRecognition, .failed)
+                    throwing: PipelineFailure.stage(.speechRecognition, .failed)
                     )
             }
         }
@@ -414,22 +421,23 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
                 }
                 inputContinuation.finish()
                 try await analyzerTask.value
+                outputContinuation.finish()
             } catch let failure as PipelineFailure {
                 inputContinuation.finish(throwing: failure)
                 resultTask.cancel()
-                await session.cancelAndFinishNow()
+                await teardownGate.teardown(session: session)
                 outputContinuation.finish(throwing: failure)
             } catch is CancellationError {
                 inputContinuation.finish(throwing: PipelineFailure.cancelled)
                 resultTask.cancel()
-                await session.cancelAndFinishNow()
+                await teardownGate.teardown(session: session)
                 outputContinuation.finish(throwing: PipelineFailure.cancelled)
             } catch {
                 inputContinuation.finish(
                     throwing: PipelineFailure.stage(.speechRecognition, .failed)
                 )
                 resultTask.cancel()
-                await session.cancelAndFinishNow()
+                await teardownGate.teardown(session: session)
                 outputContinuation.finish(
                     throwing: PipelineFailure.stage(.speechRecognition, .failed)
                 )
@@ -441,6 +449,7 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
         self.outputContinuation = outputContinuation
         self.processingTask = processingTask
         self.resultTask = resultTask
+        self.teardownGate = teardownGate
 
         return outputStream
     }
@@ -461,7 +470,7 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
         inputContinuation?.finish(throwing: failure)
         processingTask?.cancel()
         resultTask?.cancel()
-        await session.cancelAndFinishNow()
+        await teardownGate?.teardown(session: session)
         outputContinuation?.finish(throwing: failure)
 
         activeSession = nil
@@ -469,6 +478,19 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
         outputContinuation = nil
         processingTask = nil
         resultTask = nil
+        teardownGate = nil
+    }
+}
+
+private actor SessionTeardownGate {
+    private var hasTornDown = false
+
+    func teardown(session: any SpeechRecognitionSession) async {
+        guard !hasTornDown else {
+            return
+        }
+        hasTornDown = true
+        await session.cancelAndFinishNow()
     }
 }
 
