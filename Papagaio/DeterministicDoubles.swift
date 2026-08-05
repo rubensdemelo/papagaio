@@ -226,18 +226,24 @@ actor DeterministicInsightGenerator: InsightGenerator {
 final class DeterministicInsightState: InsightState {
     private(set) var cards: [InsightCard]
     private(set) var appliedUpdates: [[InsightUpdate]] = []
+    private(set) var supportingContexts: [MeetingContextBatch] = []
 
     init(cards: [InsightCard] = []) {
         self.cards = cards
     }
 
-    func apply(_ updates: [InsightUpdate]) {
+    func apply(
+        _ updates: [InsightUpdate],
+        supportedBy sourceContext: MeetingContextBatch
+    ) throws(PipelineFailure) {
         appliedUpdates.append(updates)
+        supportingContexts.append(sourceContext)
     }
 
     func reset() {
         cards.removeAll()
         appliedUpdates.removeAll()
+        supportingContexts.removeAll()
     }
 }
 
