@@ -33,6 +33,9 @@
 		A10000010000000000000019 /* Speech.framework in Test Frameworks */ = {isa = PBXBuildFile; fileRef = A20000010000000000000014 /* Speech.framework */; };
 		A1000001000000000000001A /* SpeechRecognitionAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000015 /* SpeechRecognitionAdapterTests.swift */; };
 		A1000001000000000000001B /* SpeechRecognitionAdapter.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000013 /* SpeechRecognitionAdapter.swift */; };
+		A1000001000000000000001C /* SessionOrchestration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016 /* SessionOrchestration.swift */; };
+		A1000001000000000000001D /* SessionOrchestration.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016 /* SessionOrchestration.swift */; };
+		A1000001000000000000001E /* SessionLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017 /* SessionLifecycleTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +60,8 @@
 		A20000010000000000000013 /* SpeechRecognitionAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionAdapter.swift; sourceTree = "<group>"; };
 		A20000010000000000000014 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		A20000010000000000000015 /* SpeechRecognitionAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionAdapterTests.swift; sourceTree = "<group>"; };
+		A20000010000000000000016 /* SessionOrchestration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionOrchestration.swift; sourceTree = "<group>"; };
+		A20000010000000000000017 /* SessionLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLifecycleTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +113,7 @@
 				A2000001000000000000000E /* ApplicationShell.swift */,
 				A20000010000000000000010 /* MicrophoneCapture.swift */,
 				A20000010000000000000013 /* SpeechRecognitionAdapter.swift */,
+				A20000010000000000000016 /* SessionOrchestration.swift */,
 			);
 			path = Papagaio;
 			sourceTree = "<group>";
@@ -121,6 +127,7 @@
 				A2000001000000000000000F /* ApplicationShellTests.swift */,
 				A20000010000000000000012 /* MicrophoneCaptureTests.swift */,
 				A20000010000000000000015 /* SpeechRecognitionAdapterTests.swift */,
+				A20000010000000000000017 /* SessionLifecycleTests.swift */,
 			);
 			path = PapagaioTests;
 			sourceTree = "<group>";
@@ -237,6 +244,7 @@
 				A1000001000000000000000F /* ApplicationShell.swift in Sources */,
 				A10000010000000000000012 /* MicrophoneCapture.swift in Sources */,
 				A10000010000000000000017 /* SpeechRecognitionAdapter.swift in Sources */,
+				A1000001000000000000001C /* SessionOrchestration.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,6 +265,8 @@
 				A10000010000000000000015 /* MicrophoneCaptureTests.swift in Sources */,
 				A1000001000000000000001B /* SpeechRecognitionAdapter.swift in Tests */,
 				A1000001000000000000001A /* SpeechRecognitionAdapterTests.swift in Sources */,
+				A1000001000000000000001D /* SessionOrchestration.swift in Tests */,
+				A1000001000000000000001E /* SessionLifecycleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

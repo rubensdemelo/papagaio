@@ -259,7 +259,7 @@ final class SystemSpeechRecognitionSession: SpeechRecognitionSession, @unchecked
     }
 }
 
-actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
+actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
     private let localeIdentifier: String
     private let availabilityProvider: any SpeechAvailabilityProviding
     private let sessionFactory: any SpeechRecognitionSessionFactory

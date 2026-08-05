@@ -326,7 +326,7 @@ final class BoundedAudioQueue: @unchecked Sendable {
     }
 }
 
-actor AVAudioEngineMicrophoneCapture: AudioCapture {
+actor AVAudioEngineMicrophoneCapture: SessionAudioCapture {
     private let engine: any MicrophoneEngineDriver
     private let permissionProvider: any MicrophonePermissionProviding
     private let bufferSize: UInt32
