@@ -2,10 +2,12 @@ import SwiftUI
 
 @main
 struct PapagaioApp: App {
+    @StateObject private var sessionController = FakeSessionController()
+
     var body: some Scene {
         WindowGroup {
-            Text("Papagaio")
-                .frame(minWidth: 320, minHeight: 180)
+            PapagaioView(controller: sessionController)
         }
+        .defaultSize(width: 560, height: 620)
     }
 }

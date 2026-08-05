@@ -20,6 +20,9 @@
 		A1000001000000000000000C /* FoundationModels.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000C /* FoundationModels.framework */; };
 		A1000001000000000000000D /* FoundationModels.framework in Test Frameworks */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000C /* FoundationModels.framework */; };
 		A1000001000000000000000E /* FoundationModelsAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000D /* FoundationModelsAdapterTests.swift */; };
+		A1000001000000000000000F /* ApplicationShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000E /* ApplicationShell.swift */; };
+		A10000010000000000000010 /* ApplicationShell.swift in Tests */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000E /* ApplicationShell.swift */; };
+		A10000010000000000000011 /* ApplicationShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000F /* ApplicationShellTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +39,8 @@
 		A2000001000000000000000B /* FoundationModelsAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationModelsAdapter.swift; sourceTree = "<group>"; };
 		A2000001000000000000000C /* FoundationModels.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FoundationModels.framework; path = System/Library/Frameworks/FoundationModels.framework; sourceTree = SDKROOT; };
 		A2000001000000000000000D /* FoundationModelsAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationModelsAdapterTests.swift; sourceTree = "<group>"; };
+		A2000001000000000000000E /* ApplicationShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationShell.swift; sourceTree = "<group>"; };
+		A2000001000000000000000F /* ApplicationShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationShellTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +83,7 @@
 				A20000010000000000000008 /* CoreContracts.swift */,
 				A20000010000000000000009 /* DeterministicDoubles.swift */,
 				A2000001000000000000000B /* FoundationModelsAdapter.swift */,
+				A2000001000000000000000E /* ApplicationShell.swift */,
 			);
 			path = Papagaio;
 			sourceTree = "<group>";
@@ -88,6 +94,7 @@
 				A20000010000000000000005 /* PapagaioTests.swift */,
 				A2000001000000000000000A /* CoreContractsTests.swift */,
 				A2000001000000000000000D /* FoundationModelsAdapterTests.swift */,
+				A2000001000000000000000F /* ApplicationShellTests.swift */,
 			);
 			path = PapagaioTests;
 			sourceTree = "<group>";
@@ -201,6 +208,7 @@
 				A10000010000000000000003 /* CoreDomain.swift in Sources */,
 				A10000010000000000000004 /* CoreContracts.swift in Sources */,
 				A1000001000000000000000A /* FoundationModelsAdapter.swift in Sources */,
+				A1000001000000000000000F /* ApplicationShell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -215,6 +223,8 @@
 				A10000010000000000000009 /* DeterministicDoubles.swift in Tests */,
 				A1000001000000000000000B /* FoundationModelsAdapter.swift in Tests */,
 				A1000001000000000000000E /* FoundationModelsAdapterTests.swift in Sources */,
+				A10000010000000000000010 /* ApplicationShell.swift in Tests */,
+				A10000010000000000000011 /* ApplicationShellTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
