@@ -180,6 +180,7 @@ actor DeterministicInsightGenerator: InsightGenerator {
     private let delay: Duration
     private let result: Result<[InsightUpdate], PipelineFailure>
     private var activeTask: Task<Result<[InsightUpdate], PipelineFailure>, Never>?
+    private var cancellationRequested = false
 
     init(
         delay: Duration = .zero,
@@ -190,6 +191,11 @@ actor DeterministicInsightGenerator: InsightGenerator {
     }
 
     func generate(from batch: MeetingContextBatch) async throws(PipelineFailure) -> [InsightUpdate] {
+        if cancellationRequested {
+            cancellationRequested = false
+            throw .cancelled
+        }
+
         let task = Task { () -> Result<[InsightUpdate], PipelineFailure> in
             do {
                 if delay > .zero {
@@ -210,6 +216,7 @@ actor DeterministicInsightGenerator: InsightGenerator {
     }
 
     func cancel() async {
+        cancellationRequested = true
         activeTask?.cancel()
         activeTask = nil
     }
