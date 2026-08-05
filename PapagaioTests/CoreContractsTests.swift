@@ -496,3 +496,362 @@ final class InMemoryInsightStoreTests: XCTestCase {
         )
     }
 }
+
+final class BoundedRollingMeetingContextTests: XCTestCase {
+    func testStoresFinalizedSegmentsChronologicallyAndReturnsRollingSnapshots() async throws {
+        let clock = TestMeetingContextClock()
+        let context = makeContext(clock: clock, batchTokenThreshold: 1)
+        let first = segment(1, text: "First", start: .zero)
+        let second = segment(2, text: "Second", start: .seconds(1))
+
+        try await context.append(first)
+        let firstBatch = try await context.nextBatch()
+        try await context.append(second)
+        let secondBatch = try await context.nextBatch()
+
+        XCTAssertEqual(firstBatch?.segments, [first])
+        XCTAssertEqual(secondBatch?.segments, [first, second])
+    }
+
+    func testRejectsOutOfOrderOrMalformedFinalizedSegments() async throws {
+        let context = makeContext(clock: TestMeetingContextClock())
+        try await context.append(segment(2, text: "Second", start: .seconds(2)))
+
+        let invalidSegments = [
+            segment(1, text: "Earlier sequence", start: .seconds(3)),
+            segment(3, text: "Earlier time", start: .seconds(1)),
+            FinalizedSpeechSegment(
+                sequenceNumber: 3,
+                text: "Invalid interval",
+                startOffset: .seconds(4),
+                endOffset: .seconds(3)
+            )
+        ]
+
+        for invalidSegment in invalidSegments {
+            do {
+                try await context.append(invalidSegment)
+                XCTFail("Malformed chronological input must be rejected")
+            } catch let failure {
+                XCTAssertEqual(failure, .stage(.rollingContext, .invalidState))
+            }
+        }
+    }
+
+    func testAgeLimitContinuouslyEvictsExpiredPendingContent() async throws {
+        let clock = TestMeetingContextClock()
+        let context = makeContext(
+            clock: clock,
+            maximumAge: .seconds(5),
+            maximumTokenCount: 200,
+            batchTokenThreshold: 100,
+            maximumBatchWait: .seconds(30),
+            tokenEstimator: { text in text == "Ready" ? 100 : 1 }
+        )
+        let expired = segment(1, text: "Expired", start: .zero)
+        let ready = segment(2, text: "Ready", start: .seconds(1))
+
+        try await context.append(expired)
+        let waitingBatch = Task {
+            try await context.nextBatch()
+        }
+        await waitForClockSleeper(clock)
+        await clock.advance(by: .seconds(6))
+        try await context.append(ready)
+
+        let batch = try await waitingBatch.value
+        XCTAssertEqual(batch?.segments, [ready])
+    }
+
+    func testTokenAndUTF8SizeLimitsEvictOldestSegments() async throws {
+        let tokenClock = TestMeetingContextClock()
+        let tokenBounded = makeContext(
+            clock: tokenClock,
+            maximumTokenCount: 3,
+            maximumUTF8ByteCount: 100,
+            batchTokenThreshold: 1
+        )
+        let tokenEvicted = segment(1, text: "one two", start: .zero)
+        let tokenRetained = segment(2, text: "three four", start: .seconds(1))
+        try await tokenBounded.append(tokenEvicted)
+        try await tokenBounded.append(tokenRetained)
+
+        let tokenBatch = try await tokenBounded.nextBatch()
+        XCTAssertEqual(tokenBatch?.segments, [tokenRetained])
+
+        let sizeClock = TestMeetingContextClock()
+        let sizeBounded = makeContext(
+            clock: sizeClock,
+            maximumTokenCount: 100,
+            maximumUTF8ByteCount: 5,
+            batchTokenThreshold: 1
+        )
+        let sizeEvicted = segment(1, text: "1234", start: .zero)
+        let sizeRetained = segment(2, text: "5678", start: .seconds(1))
+        try await sizeBounded.append(sizeEvicted)
+        try await sizeBounded.append(sizeRetained)
+
+        let sizeBatch = try await sizeBounded.nextBatch()
+        XCTAssertEqual(sizeBatch?.segments, [sizeRetained])
+    }
+
+    func testOversizedSingleSegmentIsDiscardedWithoutBreakingLaterDelivery() async throws {
+        let context = makeContext(
+            clock: TestMeetingContextClock(),
+            maximumTokenCount: 3,
+            maximumUTF8ByteCount: 5,
+            batchTokenThreshold: 1
+        )
+        let retained = segment(2, text: "ok", start: .seconds(1))
+
+        try await context.append(segment(1, text: "oversized segment", start: .zero))
+        try await context.append(retained)
+
+        let batch = try await context.nextBatch()
+        XCTAssertEqual(batch?.segments, [retained])
+    }
+
+    func testThresholdAndMaximumWaitBothTriggerBatchDelivery() async throws {
+        let thresholdClock = TestMeetingContextClock()
+        let thresholdContext = makeContext(
+            clock: thresholdClock,
+            batchTokenThreshold: 3,
+            maximumBatchWait: .seconds(20)
+        )
+        let first = segment(1, text: "one", start: .zero)
+        let second = segment(2, text: "two three", start: .seconds(1))
+        try await thresholdContext.append(first)
+        let thresholdBatch = Task {
+            try await thresholdContext.nextBatch()
+        }
+        try await thresholdContext.append(second)
+
+        let thresholdResult = try await thresholdBatch.value
+        XCTAssertEqual(thresholdResult?.segments, [first, second])
+
+        let waitClock = TestMeetingContextClock()
+        let waitContext = makeContext(
+            clock: waitClock,
+            batchTokenThreshold: 100,
+            maximumBatchWait: .seconds(5)
+        )
+        let quiet = segment(1, text: "Quiet", start: .zero)
+        try await waitContext.append(quiet)
+        let maximumWaitBatch = Task {
+            try await waitContext.nextBatch()
+        }
+        await waitForClockSleeper(waitClock)
+        await waitClock.advance(by: .seconds(5))
+
+        let maximumWaitResult = try await maximumWaitBatch.value
+        XCTAssertEqual(maximumWaitResult?.segments, [quiet])
+    }
+
+    func testBatchDeliveryRejectsOverlappingConsumers() async throws {
+        let clock = TestMeetingContextClock()
+        let context = makeContext(
+            clock: clock,
+            batchTokenThreshold: 5,
+            maximumBatchWait: .seconds(20)
+        )
+        let pending = segment(1, text: "one", start: .zero)
+        try await context.append(pending)
+        let firstConsumer = Task {
+            try await context.nextBatch()
+        }
+        await waitForClockSleeper(clock)
+
+        do {
+            _ = try await context.nextBatch()
+            XCTFail("Only one outstanding batch consumer is allowed")
+        } catch let failure {
+            XCTAssertEqual(failure, .stage(.rollingContext, .invalidState))
+        }
+
+        await clock.advance(by: .seconds(20))
+        let firstResult = try await firstConsumer.value
+        XCTAssertEqual(firstResult?.segments, [pending])
+    }
+
+    func testCancellingWaitingConsumerReleasesSerializationWithoutCancellingContext() async throws {
+        let clock = TestMeetingContextClock()
+        let context = makeContext(
+            clock: clock,
+            batchTokenThreshold: 5,
+            maximumBatchWait: .seconds(20)
+        )
+        let first = segment(1, text: "pending", start: .zero)
+        try await context.append(first)
+        let cancelledConsumer = Task {
+            try await context.nextBatch()
+        }
+        await waitForClockSleeper(clock)
+        cancelledConsumer.cancel()
+
+        do {
+            _ = try await cancelledConsumer.value
+            XCTFail("A cancelled consumer must be released")
+        } catch let failure as PipelineFailure {
+            XCTAssertEqual(failure, .cancelled)
+        }
+
+        let second = segment(2, text: "enough new content now", start: .seconds(1))
+        try await context.append(second)
+        let laterBatch = try await context.nextBatch()
+        XCTAssertEqual(laterBatch?.segments, [first, second])
+    }
+
+    func testClearAndCancelReleaseWaitersAndRemoveAllContent() async throws {
+        let clearClock = TestMeetingContextClock()
+        let clearable = makeContext(
+            clock: clearClock,
+            batchTokenThreshold: 2,
+            maximumBatchWait: .seconds(20)
+        )
+        try await clearable.append(segment(1, text: "old", start: .zero))
+        let clearedConsumer = Task {
+            try await clearable.nextBatch()
+        }
+        await waitForClockSleeper(clearClock)
+        await clearable.clear()
+        let clearedBatch = try await clearedConsumer.value
+        XCTAssertNil(clearedBatch)
+
+        let fresh = segment(1, text: "new content", start: .zero)
+        try await clearable.append(fresh)
+        let freshBatch = try await clearable.nextBatch()
+        XCTAssertEqual(freshBatch?.segments, [fresh])
+
+        let cancelClock = TestMeetingContextClock()
+        let cancellable = makeContext(
+            clock: cancelClock,
+            batchTokenThreshold: 10,
+            maximumBatchWait: .seconds(20)
+        )
+        try await cancellable.append(segment(1, text: "pending", start: .zero))
+        let cancelledConsumer = Task {
+            try await cancellable.nextBatch()
+        }
+        await waitForClockSleeper(cancelClock)
+        await cancellable.cancel()
+
+        do {
+            _ = try await cancelledConsumer.value
+            XCTFail("Cancellation must release the pending consumer")
+        } catch let failure as PipelineFailure {
+            XCTAssertEqual(failure, .cancelled)
+        }
+        do {
+            try await cancellable.append(segment(2, text: "late", start: .seconds(1)))
+            XCTFail("Cancelled context must reject later input")
+        } catch let failure {
+            XCTAssertEqual(failure, .cancelled)
+        }
+    }
+
+    private func makeContext(
+        clock: TestMeetingContextClock,
+        maximumAge: Duration = .seconds(60),
+        maximumTokenCount: Int = 100,
+        maximumUTF8ByteCount: Int = 1_000,
+        batchTokenThreshold: Int = 3,
+        maximumBatchWait: Duration = .seconds(10),
+        tokenEstimator: @escaping BoundedRollingMeetingContext.TokenEstimator = { text in
+            text.split(whereSeparator: \.isWhitespace).count
+        }
+    ) -> BoundedRollingMeetingContext {
+        BoundedRollingMeetingContext(
+            configuration: MeetingContextConfiguration(
+                maximumAge: maximumAge,
+                maximumTokenCount: maximumTokenCount,
+                maximumUTF8ByteCount: maximumUTF8ByteCount,
+                batchTokenThreshold: batchTokenThreshold,
+                maximumBatchWait: maximumBatchWait
+            ),
+            clock: clock,
+            tokenEstimator: tokenEstimator
+        )
+    }
+
+    private func segment(
+        _ sequenceNumber: UInt64,
+        text: String,
+        start: Duration
+    ) -> FinalizedSpeechSegment {
+        FinalizedSpeechSegment(
+            sequenceNumber: sequenceNumber,
+            text: text,
+            startOffset: start,
+            endOffset: start + .seconds(1)
+        )
+    }
+
+    private func waitForClockSleeper(_ clock: TestMeetingContextClock) async {
+        while await clock.sleeperCount == 0 {
+            await Task.yield()
+        }
+    }
+}
+
+private actor TestMeetingContextClock: MeetingContextClock {
+    private struct Waiter {
+        let deadline: Duration
+        let continuation: CheckedContinuation<Void, any Error>
+    }
+
+    private var current: Duration = .zero
+    private var nextWaiterID: UInt64 = 0
+    private var waiters: [UInt64: Waiter] = [:]
+
+    var sleeperCount: Int {
+        waiters.count
+    }
+
+    func now() -> Duration {
+        current
+    }
+
+    func sleep(until deadline: Duration) async throws {
+        guard current < deadline else {
+            return
+        }
+
+        nextWaiterID += 1
+        let waiterID = nextWaiterID
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, any Error>) in
+                if Task.isCancelled {
+                    continuation.resume(throwing: CancellationError())
+                } else if current >= deadline {
+                    continuation.resume()
+                } else {
+                    waiters[waiterID] = Waiter(
+                        deadline: deadline,
+                        continuation: continuation
+                    )
+                }
+            }
+        } onCancel: {
+            Task {
+                await self.cancelWaiter(waiterID)
+            }
+        }
+    }
+
+    func advance(by duration: Duration) {
+        current += duration
+        let readyWaiterIDs = waiters.compactMap { id, waiter in
+            waiter.deadline <= current ? id : nil
+        }
+        for waiterID in readyWaiterIDs {
+            let waiter = waiters.removeValue(forKey: waiterID)
+            waiter?.continuation.resume()
+        }
+    }
+
+    private func cancelWaiter(_ waiterID: UInt64) {
+        let waiter = waiters.removeValue(forKey: waiterID)
+        waiter?.continuation.resume(throwing: CancellationError())
+    }
+}
