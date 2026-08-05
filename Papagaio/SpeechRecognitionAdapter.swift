@@ -421,6 +421,7 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
                 }
                 inputContinuation.finish()
                 try await analyzerTask.value
+                await resultTask.value
                 outputContinuation.finish()
             } catch let failure as PipelineFailure {
                 inputContinuation.finish(throwing: failure)
