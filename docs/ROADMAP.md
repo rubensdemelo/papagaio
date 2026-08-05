@@ -1,6 +1,6 @@
 # Papagaio Roadmap
 
-The repository currently contains product and architecture documents only. No application milestones are complete yet.
+The repository contains the native M1 implementation through the vertical-slice integration. Milestone 1 remains open until its hardware and long-running validation gates pass.
 
 ## Milestone 1: Native vertical slice
 
@@ -18,6 +18,24 @@ Goal: prove the complete Apple-native understanding loop with the smallest possi
 - Add deterministic fixtures and unit tests for context limits and insight update behavior.
 
 Exit criterion: speaking into the Mac produces useful, structured insight cards through an entirely native, on-device pipeline.
+
+### Milestone 1 validation status
+
+Verified on macOS 26.5.2:
+
+- 68 unit tests pass in both Debug and Release configurations.
+- Debug and Release builds pass with warnings treated as errors and Swift 6 complete strict-concurrency checking enabled.
+- Static privacy scans find no production logging, persistence, or networking APIs.
+- The built application launches and exits cleanly without creating meeting-content files; its inspected container contains only window-frame preferences.
+
+Not yet verified:
+
+- Microphone permission grant or denial behavior in the live app.
+- Live microphone speech through SpeechAnalyzer, Foundation Models availability, and visible cards.
+- Restart, interruption, unsupported-locale, model-unavailable, and stop-during-stage hardware paths.
+- The 15-to-30-minute bounded-memory smoke session and Instruments resource-growth inspection.
+
+The Milestone 1 exit criterion is not marked complete until the not-yet-verified checks have direct evidence.
 
 ## Milestone 2: Real meeting audio
 

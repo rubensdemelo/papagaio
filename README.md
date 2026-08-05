@@ -6,7 +6,7 @@ The insight stream is the product. Papagaio is not a transcription app, note-tak
 
 ## Status
 
-M1-00 provides the native macOS 26+ SwiftUI application and unit-test scaffold. Later milestones will add the temporary audio, speech, model, and insight pipeline.
+M1-09 provides the native microphone-to-insight vertical slice, including temporary speech recognition, bounded context, on-device Foundation Models generation, in-memory cards, session cleanup, and the SwiftUI composition root. Automated M1-10 checks pass; direct hardware acceptance remains open.
 
 ## MVP experience
 
@@ -42,10 +42,10 @@ SpeechAnalyzer + SpeechTranscriber
         live insight cards
 ```
 
-The macOS MVP uses:
+The current M1 vertical slice uses:
 
 - Swift and SwiftUI for the application and interface.
-- ScreenCaptureKit for live meeting/system audio and microphone capture where supported.
+- AVAudioEngine for microphone capture. ScreenCaptureKit meeting/system audio is planned for Milestone 2.
 - SpeechAnalyzer and SpeechTranscriber for temporary, on-device speech-to-text.
 - The Foundation Models framework and `SystemLanguageModel` for on-device meeting understanding.
 - Guided generation for structured, typed insight updates.
@@ -102,7 +102,7 @@ xcodebuild \
   -scheme Papagaio \
   -configuration Debug \
   -destination 'platform=macOS' \
-  -derivedDataPath .build/DerivedData \
+  SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
   build
 
 xcodebuild \
@@ -110,15 +110,22 @@ xcodebuild \
   -scheme Papagaio \
   -configuration Release \
   -destination 'platform=macOS' \
-  -derivedDataPath .build/DerivedData \
+  SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
   build
 
 xcodebuild \
   -project Papagaio.xcodeproj \
   -scheme Papagaio \
+  -configuration Debug \
   -destination 'platform=macOS' \
-  -derivedDataPath .build/DerivedData \
+  test
+
+xcodebuild \
+  -project Papagaio.xcodeproj \
+  -scheme Papagaio \
+  -configuration Release \
+  -destination 'platform=macOS' \
   test
 ```
 
-M1-00 is limited to the placeholder window, project configuration, and test-bundle smoke test. Verified progress is tracked in [the roadmap](docs/ROADMAP.md); work must not be marked complete until the corresponding acceptance criteria pass.
+The automated M1-10 run on macOS 26.5.2 passed all 68 unit tests in Debug and Release and passed both warnings-as-errors builds. The app also launched and exited cleanly in an idle smoke check. Permission prompts, live microphone speech, SpeechAnalyzer output, Apple Intelligence availability, and the 15-to-30-minute bounded-memory session have not been directly exercised in this environment; they remain required before the M1 exit criterion can be marked complete. Verified progress is tracked in [the roadmap](docs/ROADMAP.md).
