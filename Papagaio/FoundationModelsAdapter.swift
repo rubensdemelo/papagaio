@@ -290,7 +290,7 @@ private extension FoundationInsightOperation {
     }
 }
 
-actor FoundationModelsInsightGenerator: InsightGenerator {
+actor FoundationModelsInsightGenerator: SessionInsightGenerator {
     private let runtime: any FoundationModelsRuntime
     private let instructions: String
     private let generationGate = FoundationModelsGenerationGate()

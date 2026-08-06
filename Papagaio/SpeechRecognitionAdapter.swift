@@ -259,7 +259,7 @@ final class SystemSpeechRecognitionSession: SpeechRecognitionSession, @unchecked
     }
 }
 
-actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
+actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
     private let localeIdentifier: String
     private let availabilityProvider: any SpeechAvailabilityProviding
     private let sessionFactory: any SpeechRecognitionSessionFactory
@@ -421,6 +421,7 @@ actor SpeechAnalyzerTranscriberAdapter: TemporarySpeechRecognizer {
                 }
                 inputContinuation.finish()
                 try await analyzerTask.value
+                await resultTask.value
                 outputContinuation.finish()
             } catch let failure as PipelineFailure {
                 inputContinuation.finish(throwing: failure)
