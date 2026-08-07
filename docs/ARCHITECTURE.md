@@ -24,6 +24,9 @@ System/meeting audio ─┘             │
                                     v
                            live SwiftUI insight cards
 
+                       non-content voice feedback
+                       (input level + recognition activity)
+
 Old audio buffers and temporary text are continuously discarded.
 Stopping the session clears all remaining meeting data.
 ```
@@ -55,6 +58,8 @@ At startup, check:
 The current M1 composition root supplies `en-US` as the fixed meeting locale regardless of the Mac's system locale. A user-selectable locale remains outside the current interface.
 
 The app should guide the user when assets are downloadable and stop cleanly when the language or device is unsupported.
+
+The capture layer may expose bounded, content-free input telemetry: a normalized level, whether audio buffers have arrived, and whether sustained silence suggests a muted input. It must not expose audio samples or temporary speech text to the UI. Pausing cancels the active capture and speech tasks while retaining the in-memory session context; resuming creates fresh capture and speech tasks. Stopping still clears all session data.
 
 ### Rolling meeting context
 

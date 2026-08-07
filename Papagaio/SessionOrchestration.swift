@@ -3,6 +3,7 @@ import Foundation
 protocol SessionAudioCapture: AudioCapture {
     func permission() async -> MicrophonePermission
     func checkAvailability() async -> Availability
+    func inputSnapshot() async -> AudioInputSnapshot
 }
 
 protocol SessionSpeechRecognizer: TemporarySpeechRecognizer {
@@ -70,6 +71,7 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
     private var audioForwardingTask: Task<Void, Never>?
     private var speechTask: Task<Void, Never>?
     private var generationTask: Task<Void, Never>?
+    private var finalizedSpeechSegmentCount = 0
 
     init(
         localeIdentifier: String,
@@ -169,6 +171,7 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
         activeSessionID = sessionID
         activeContext = contextFactory.makeContext()
         insightState.reset()
+        finalizedSpeechSegmentCount = 0
         failure = nil
         status = .checkingAvailability
 
@@ -215,6 +218,57 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
         await cleanup(sessionID: sessionID, kind: .stop)
     }
 
+    func pause() async {
+        guard let sessionID = activeSessionID,
+              status == .listening || status == .processing else {
+            return
+        }
+
+        let audioTask = audioForwardingTask
+        let speechTask = speechTask
+        let generationTask = generationTask
+        audioForwardingTask = nil
+        self.speechTask = nil
+        self.generationTask = nil
+
+        status = .paused
+
+        audioTask?.cancel()
+        speechTask?.cancel()
+        generationTask?.cancel()
+        await speechRecognizer.stop()
+        await capture.stop()
+        guard activeSessionID == sessionID else { return }
+    }
+
+    func resume() async throws(PipelineFailure) {
+        guard let sessionID = activeSessionID, status == .paused else {
+            throw .stage(.sessionLifecycle, .invalidState)
+        }
+
+        do {
+            let audio = try await capture.start()
+            try ensureActive(sessionID)
+
+            let forwardedAudio = makeForwardedAudioStream(audio, sessionID: sessionID)
+            audioForwardingTask = forwardedAudio.task
+            let speech = try await speechRecognizer.recognize(audio: forwardedAudio.stream)
+            try ensureActive(sessionID)
+
+            speechTask = Task { [weak self] in
+                await self?.consumeSpeech(speech, sessionID: sessionID)
+            }
+            generationTask = Task { [weak self] in
+                await self?.generateBatches(sessionID: sessionID)
+            }
+            status = .listening
+        } catch {
+            let failure = error
+            await cleanup(sessionID: sessionID, kind: .failure(failure))
+            throw failure
+        }
+    }
+
     func cancel() async {
         guard let sessionID = activeSessionID else {
             status = .stopped
@@ -245,13 +299,20 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
                     return
                 }
                 try await context.append(segment)
+                finalizedSpeechSegmentCount += 1
                 guard activeSessionID == sessionID else {
                     return
                 }
             }
         } catch let failure as PipelineFailure {
+            if failure == .cancelled, status == .paused {
+                return
+            }
             await fail(failure, sessionID: sessionID)
         } catch is CancellationError {
+            if status == .paused {
+                return
+            }
             await fail(.cancelled, sessionID: sessionID)
         } catch {
             await fail(.stage(.speechRecognition, .failed), sessionID: sessionID)
@@ -280,8 +341,11 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
                 try insightState.apply(updates, supportedBy: batch)
                 status = .listening
             }
-        } catch {
-            await fail(error, sessionID: sessionID)
+        } catch let failure {
+            if failure == .cancelled, status == .paused {
+                return
+            }
+            await fail(failure, sessionID: sessionID)
         }
     }
 
@@ -298,6 +362,7 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
         }
 
         activeSessionID = nil
+        finalizedSpeechSegmentCount = 0
         let context = activeContext
         activeContext = nil
 
@@ -361,6 +426,16 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
             }
         }
         return (stream, task)
+    }
+
+    func feedbackSnapshot() async -> SessionFeedbackSnapshot {
+        guard activeSessionID != nil else {
+            return .inactive
+        }
+        return SessionFeedbackSnapshot(
+            audioInput: await capture.inputSnapshot(),
+            finalizedSpeechSegmentCount: finalizedSpeechSegmentCount
+        )
     }
 
     private func ensureActive(_ sessionID: UInt64) throws(PipelineFailure) {

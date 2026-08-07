@@ -16,6 +16,8 @@ It is not an enterprise recording platform, collaboration workspace, or meeting 
 
 The app opens to one clear listening control and a small status indicator.
 
+While listening, Papagaio shows a live microphone input level and non-content speech-recognition activity status so the user can tell that capture is active without exposing a transcript. The user can pause and resume capture without ending the session, or stop listening to clear the session. A concise cue explains that processing is temporary and on-device.
+
 When the user starts listening:
 
 1. Papagaio captures system/meeting audio and microphone audio.
@@ -25,6 +27,8 @@ When the user starts listening:
 5. The UI adds, updates, or removes insight cards as the meeting develops.
 
 The app does not display a live transcript. Temporary transcript text is discarded as it leaves the rolling context window and is discarded completely when listening stops.
+
+If no input is detected for a sustained period, the interface warns that the microphone may be muted. Capture or microphone failures are shown as explicit connection errors rather than as an apparently active listening state.
 
 ## Insight categories
 

@@ -37,6 +37,40 @@ final class SessionLifecycleTests: XCTestCase {
         XCTAssertEqual(generatorStarts, 0)
     }
 
+    func testPauseStopsInputWithoutClearingSessionAndResumeRestartsInput() async throws {
+        let capture = TestSessionAudioCapture()
+        let speech = TestSessionSpeechRecognizer()
+        let generator = TestSessionInsightGenerator()
+        let coordinator = makeCoordinator(
+            capture: capture,
+            speech: speech,
+            generator: generator
+        )
+
+        try await coordinator.start()
+        await coordinator.pause()
+
+        XCTAssertEqual(coordinator.status, .paused)
+        let startsAfterPause = await capture.startCount()
+        let stopsAfterPause = await capture.stopCount()
+        let generatorStopsAfterPause = await generator.stopCount()
+        XCTAssertEqual(startsAfterPause, 1)
+        XCTAssertEqual(stopsAfterPause, 1)
+        XCTAssertEqual(generatorStopsAfterPause, 0)
+
+        try await coordinator.resume()
+        XCTAssertEqual(coordinator.status, .listening)
+        let startsAfterResume = await capture.startCount()
+        XCTAssertEqual(startsAfterResume, 2)
+
+        await coordinator.stop()
+        XCTAssertEqual(coordinator.status, .stopped)
+        let stopsAfterStop = await capture.stopCount()
+        let generatorStopsAfterStop = await generator.stopCount()
+        XCTAssertEqual(stopsAfterStop, 2)
+        XCTAssertEqual(generatorStopsAfterStop, 1)
+    }
+
     func testSpeechUnavailableStopsBeforeCapture() async throws {
         let capture = TestSessionAudioCapture()
         let speech = TestSessionSpeechRecognizer(
@@ -547,6 +581,7 @@ actor TestSessionAudioCapture: SessionAudioCapture {
     private let configuredPermission: MicrophonePermission
     private let configuredAvailability: Availability
     private let startFailure: PipelineFailure?
+    private let configuredInputSnapshot: AudioInputSnapshot
     private var currentStream: TestStream<AudioChunk>?
     private var starts = 0
     private var stops = 0
@@ -555,11 +590,13 @@ actor TestSessionAudioCapture: SessionAudioCapture {
     init(
         permission: MicrophonePermission = .granted,
         availability: Availability = .available,
-        startFailure: PipelineFailure? = nil
+        startFailure: PipelineFailure? = nil,
+        inputSnapshot: AudioInputSnapshot = .inactive
     ) {
         configuredPermission = permission
         configuredAvailability = availability
         self.startFailure = startFailure
+        configuredInputSnapshot = inputSnapshot
     }
 
     func permission() async -> MicrophonePermission {
@@ -568,6 +605,10 @@ actor TestSessionAudioCapture: SessionAudioCapture {
 
     func checkAvailability() async -> Availability {
         configuredAvailability
+    }
+
+    func inputSnapshot() async -> AudioInputSnapshot {
+        configuredInputSnapshot
     }
 
     func start() async throws(PipelineFailure) -> AudioStream {
@@ -701,12 +742,25 @@ actor TestMeetingContext: RollingMeetingContext {
             return pendingBatches.removeFirst()
         }
         do {
-            return try await withCheckedThrowingContinuation {
-                (continuation: CheckedContinuation<MeetingContextBatch?, any Error>) in
-                waiting = continuation
+            return try await withTaskCancellationHandler {
+                try Task.checkCancellation()
+                return try await withCheckedThrowingContinuation {
+                    (continuation: CheckedContinuation<MeetingContextBatch?, any Error>) in
+                    if Task.isCancelled {
+                        continuation.resume(throwing: PipelineFailure.cancelled)
+                    } else {
+                        waiting = continuation
+                    }
+                }
+            } onCancel: {
+                Task {
+                    await self.cancelWaitingBatch()
+                }
             }
         } catch let failure as PipelineFailure {
             throw failure
+        } catch is CancellationError {
+            throw .cancelled
         } catch {
             throw .stage(.rollingContext, .failed)
         }
@@ -726,6 +780,12 @@ actor TestMeetingContext: RollingMeetingContext {
             self.waiting = nil
             waiting.resume(throwing: PipelineFailure.cancelled)
         }
+    }
+
+    private func cancelWaitingBatch() {
+        guard let waiting else { return }
+        self.waiting = nil
+        waiting.resume(throwing: PipelineFailure.cancelled)
     }
 
     func cancelCount() -> Int { cancels }
