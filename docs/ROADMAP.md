@@ -27,12 +27,14 @@ Verified on macOS 26.5.2:
 - Debug and Release builds pass with warnings treated as errors and Swift 6 complete strict-concurrency checking enabled.
 - Static privacy scans find no production logging, persistence, or networking APIs.
 - The built application launches and exits cleanly without creating meeting-content files; its inspected container contains only window-frame preferences.
+- Optional local-resource-folder selection is implemented separately from listening: the app validates and displays one folder, persists a read-only security-scoped bookmark, and reports stale or invalid access without reading folder contents.
 
 Not yet verified:
 
 - Microphone permission grant or denial behavior in the live app.
 - Live microphone speech through SpeechAnalyzer, Foundation Models availability, and visible cards.
 - Restart, interruption, unsupported-locale, model-unavailable, and stop-during-stage hardware paths.
+- Live user selection and relaunch restoration of a local resource folder through the macOS open panel and sandbox bookmark flow.
 - The 15-to-30-minute bounded-memory smoke session and Instruments resource-growth inspection.
 
 The Milestone 1 exit criterion is not marked complete until the not-yet-verified checks have direct evidence.

@@ -50,6 +50,12 @@ Speech recognition is a separate native stage. SpeechAnalyzer and SpeechTranscri
 
 The current M1 implementation uses English (US) (`en-US`) for both speech recognition and meeting understanding regardless of the Mac's system locale. Locale selection is not yet a user-facing control.
 
+## Local resource folder
+
+Papagaio lets the user optionally choose one local folder containing manuals and support resources. The app validates that the selected location exists, is a folder, and is readable, then retains a read-only security-scoped bookmark so access can be restored across launches in the macOS sandbox. The UI shows the selected path and provides change, remove, and re-select actions when access is lost.
+
+This preparation step does not read, index, search, upload, or ingest folder contents. Users may use Docling separately to convert manuals to Markdown; document retrieval and external AI remain outside this implementation.
+
 ## Data lifecycle
 
 - Audio remains in memory only long enough to feed speech recognition.
