@@ -1,6 +1,6 @@
-.PHONY: restart
+.PHONY: final
 
-restart:
+final:
 	@pkill -x Papagaio 2>/dev/null || true
 	xcodebuild \
 		-project Papagaio.xcodeproj \
