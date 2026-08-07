@@ -254,6 +254,8 @@ final class DeterministicSessionLifecycle: SessionLifecycle {
     private(set) var startCount = 0
     private(set) var stopCount = 0
     private(set) var cancelCount = 0
+    private(set) var pauseCount = 0
+    private(set) var resumeCount = 0
 
     let configuredAvailability: Availability
     let configuredStartFailure: PipelineFailure?
@@ -305,8 +307,25 @@ final class DeterministicSessionLifecycle: SessionLifecycle {
         status = .stopped
     }
 
+    func pause() async {
+        pauseCount += 1
+        status = .paused
+    }
+
+    func resume() async throws(PipelineFailure) {
+        resumeCount += 1
+        status = .listening
+    }
+
     func cancel() async {
         cancelCount += 1
         status = .stopped
+    }
+
+    func feedbackSnapshot() async -> SessionFeedbackSnapshot {
+        status == .stopped ? .inactive : SessionFeedbackSnapshot(
+            audioInput: .inactive,
+            finalizedSpeechSegmentCount: 0
+        )
     }
 }

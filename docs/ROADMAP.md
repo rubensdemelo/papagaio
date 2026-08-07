@@ -73,6 +73,7 @@ Exit criterion: representative meeting fixtures produce concise, non-repetitive 
 Goal: ship a technical preview that behaves predictably for a full meeting.
 
 - Add polished unavailable, permission, listening, processing, interrupted, and stopped states.
+- Add live non-content voice feedback with an input meter, speech-recognition activity cue, mute warning, microphone connection error, pause/resume, and stop controls.
 - Ensure cancellation and cleanup work from every state.
 - Run one-hour capture and insight-generation soak tests.
 - Verify bounded audio queues, text context, model context, and card count.

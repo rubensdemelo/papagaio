@@ -1,3 +1,5 @@
+import Foundation
+
 struct SessionID: Hashable, Sendable, Equatable {
     let rawValue: UInt64
 
@@ -11,6 +13,7 @@ enum SessionStatus: Sendable, Equatable {
     case checkingAvailability
     case listening
     case processing
+    case paused
     case interrupted
     case unavailable
 }
@@ -21,6 +24,55 @@ struct AudioChunk: Sendable, Equatable {
     let sampleRate: Double
     let channelCount: Int
     let samples: [Float]
+
+    /// A normalized, content-free input level used only for live UI feedback.
+    let inputLevel: Float
+
+    init(
+        sequenceNumber: UInt64,
+        duration: Duration,
+        sampleRate: Double,
+        channelCount: Int,
+        samples: [Float],
+        inputLevel: Float? = nil
+    ) {
+        self.sequenceNumber = sequenceNumber
+        self.duration = duration
+        self.sampleRate = sampleRate
+        self.channelCount = channelCount
+        self.samples = samples
+        self.inputLevel = inputLevel ?? Self.normalizedInputLevel(for: samples)
+    }
+
+    private static func normalizedInputLevel(for samples: [Float]) -> Float {
+        guard !samples.isEmpty else { return 0 }
+        let meanSquare = samples.reduce(into: Float.zero) { result, sample in
+            result += sample * sample
+        } / Float(samples.count)
+        return min(1, max(0, sqrt(meanSquare) * 4))
+    }
+}
+
+struct AudioInputSnapshot: Sendable, Equatable {
+    let level: Float
+    let hasReceivedAudio: Bool
+    let isMuted: Bool
+
+    static let inactive = AudioInputSnapshot(
+        level: 0,
+        hasReceivedAudio: false,
+        isMuted: false
+    )
+}
+
+struct SessionFeedbackSnapshot: Sendable, Equatable {
+    let audioInput: AudioInputSnapshot
+    let finalizedSpeechSegmentCount: Int
+
+    static let inactive = SessionFeedbackSnapshot(
+        audioInput: .inactive,
+        finalizedSpeechSegmentCount: 0
+    )
 }
 
 struct FinalizedSpeechSegment: Sendable, Equatable {
