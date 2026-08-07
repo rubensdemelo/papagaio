@@ -130,7 +130,114 @@ struct SpeechAudioInput: Sendable, Equatable {
     let startOffset: Duration
 }
 
-typealias SpeechAudioInputStream = AsyncThrowingStream<SpeechAudioInput, any Error>
+// The analyzer owns and consumes this iterator from one task only. The
+// underlying AsyncThrowingStream iterator is intentionally transferred as a
+// single-consumer value to that task.
+struct SpeechAudioInputSequence: AsyncSequence, @unchecked Sendable {
+    typealias Element = SpeechAudioInput
+
+    private let firstChunk: AudioChunk
+    private let remainingAudio: AudioStream.AsyncIterator
+    private let analysisFormat: MicrophoneAudioFormat
+
+    init(
+        firstChunk: AudioChunk,
+        remainingAudio: AudioStream.AsyncIterator,
+        analysisFormat: MicrophoneAudioFormat
+    ) {
+        self.firstChunk = firstChunk
+        self.remainingAudio = remainingAudio
+        self.analysisFormat = analysisFormat
+    }
+
+    func makeAsyncIterator() -> Iterator {
+        Iterator(
+            firstChunk: firstChunk,
+            remainingAudio: remainingAudio,
+            analysisFormat: analysisFormat
+        )
+    }
+
+    struct Iterator: AsyncIteratorProtocol {
+        private var pendingFirstChunk: AudioChunk?
+        private var remainingAudio: AudioStream.AsyncIterator
+        private let analysisFormat: MicrophoneAudioFormat
+        private var startOffset = Duration.zero
+
+        fileprivate init(
+            firstChunk: AudioChunk,
+            remainingAudio: AudioStream.AsyncIterator,
+            analysisFormat: MicrophoneAudioFormat
+        ) {
+            pendingFirstChunk = firstChunk
+            self.remainingAudio = remainingAudio
+            self.analysisFormat = analysisFormat
+        }
+
+        mutating func next() async throws -> SpeechAudioInput? {
+            let chunk: AudioChunk
+            if let pendingFirstChunk {
+                self.pendingFirstChunk = nil
+                chunk = pendingFirstChunk
+            } else if let nextChunk = try await remainingAudio.next() {
+                chunk = nextChunk
+            } else {
+                return nil
+            }
+
+            let input = SpeechAudioInput(
+                chunk: chunk,
+                sourceFormat: MicrophoneAudioFormat(
+                    sampleRate: chunk.sampleRate,
+                    channelCount: chunk.channelCount
+                ),
+                analysisFormat: analysisFormat,
+                startOffset: startOffset
+            )
+            startOffset += chunk.duration
+            return input
+        }
+    }
+}
+
+struct SpeechAnalyzerInputSequence: AsyncSequence, Sendable {
+    typealias Element = AnalyzerInput
+
+    private let speechInput: SpeechAudioInputSequence
+
+    init(speechInput: SpeechAudioInputSequence) {
+        self.speechInput = speechInput
+    }
+
+    func makeAsyncIterator() -> Iterator {
+        Iterator(
+            speechInput: speechInput.makeAsyncIterator()
+        )
+    }
+
+    struct Iterator: AsyncIteratorProtocol {
+        private var speechInput: SpeechAudioInputSequence.Iterator
+        private var bufferConverter: SpeechAudioBufferConverter?
+
+        fileprivate init(speechInput: SpeechAudioInputSequence.Iterator) {
+            self.speechInput = speechInput
+        }
+
+        mutating func next() async throws -> AnalyzerInput? {
+            guard let audioInput = try await speechInput.next() else {
+                return nil
+            }
+            if bufferConverter == nil {
+                bufferConverter = try SpeechAudioBufferConverter(
+                    sourceFormat: audioInput.sourceFormat,
+                    analysisFormat: audioInput.analysisFormat
+                )
+            }
+            let buffer = try bufferConverter!.convert(audioInput)
+            return makeAnalyzerInput(buffer: buffer)
+        }
+    }
+}
 
 struct SpeechTranscriptionResult: Sendable, Equatable {
     let text: String
@@ -146,7 +253,7 @@ protocol SpeechRecognitionSession: Sendable {
         considering naturalFormat: MicrophoneAudioFormat
     ) async -> MicrophoneAudioFormat?
     func prepare(toAnalyze format: MicrophoneAudioFormat) async throws(PipelineFailure)
-    func start(input: SpeechAudioInputStream) async throws(PipelineFailure)
+    func start(input: SpeechAudioInputSequence) async throws(PipelineFailure)
     func results() -> SpeechTranscriptionStream
     func cancelAndFinishNow() async
 }
@@ -206,41 +313,11 @@ final class SystemSpeechRecognitionSession: SpeechRecognitionSession, @unchecked
         }
     }
 
-    func start(input: SpeechAudioInputStream) async throws(PipelineFailure) {
-        let analyzerInputStream = AsyncThrowingStream<AnalyzerInput, any Error>(
-            bufferingPolicy: .bufferingOldest(1)
-        ) {
-            continuation in
-            Task {
-                do {
-                    var bufferConverter: SpeechAudioBufferConverter?
-                    for try await audioInput in input {
-                        if bufferConverter == nil {
-                            bufferConverter = try SpeechAudioBufferConverter(
-                                sourceFormat: audioInput.sourceFormat,
-                                analysisFormat: audioInput.analysisFormat
-                            )
-                        }
-                        let buffer = try bufferConverter!.convert(audioInput)
-                        continuation.yield(
-                            makeAnalyzerInput(buffer: buffer)
-                        )
-                    }
-                    continuation.finish()
-                } catch let failure as PipelineFailure {
-                    continuation.finish(throwing: failure)
-                } catch is CancellationError {
-                    continuation.finish(throwing: PipelineFailure.cancelled)
-                } catch {
-                    continuation.finish(
-                        throwing: PipelineFailure.stage(.speechRecognition, .failed)
-                    )
-                }
-            }
-        }
-
+    func start(input: SpeechAudioInputSequence) async throws(PipelineFailure) {
         do {
-            try await analyzer.start(inputSequence: analyzerInputStream)
+            try await analyzer.start(
+                inputSequence: SpeechAnalyzerInputSequence(speechInput: input)
+            )
         } catch {
             throw speechFailure(for: error)
         }
@@ -293,7 +370,6 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
     private let sessionFactory: any SpeechRecognitionSessionFactory
 
     private var activeSession: (any SpeechRecognitionSession)?
-    private var inputContinuation: SpeechAudioInputStream.Continuation?
     private var outputContinuation: FinalizedSpeechStream.Continuation?
     private var processingTask: Task<Void, Never>?
     private var resultTask: Task<Void, Never>?
@@ -346,14 +422,6 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
             localeIdentifier: resolvedLocaleIdentifier
         )
         let teardownGate = SessionTeardownGate()
-        var inputContinuation: SpeechAudioInputStream.Continuation?
-        let inputStream = SpeechAudioInputStream { continuation in
-            inputContinuation = continuation
-        }
-        guard let inputContinuation else {
-            throw .stage(.speechRecognition, .failed)
-        }
-
         var outputContinuation: FinalizedSpeechStream.Continuation?
         let outputStream = FinalizedSpeechStream(
             bufferingPolicy: .bufferingOldest(16)
@@ -411,7 +479,6 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
             do {
                 var iterator = audio.makeAsyncIterator()
                 guard let firstChunk = try await iterator.next() else {
-                    inputContinuation.finish()
                     resultTask.cancel()
                     outputContinuation.finish()
                     return
@@ -427,54 +494,26 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
                     throw PipelineFailure.stage(.speechRecognition, .invalidState)
                 }
                 try await session.prepare(toAnalyze: analysisFormat)
+                let speechInput = SpeechAudioInputSequence(
+                    firstChunk: firstChunk,
+                    remainingAudio: iterator,
+                    analysisFormat: analysisFormat
+                )
                 let analyzerTask = Task {
-                    try await session.start(input: inputStream)
+                    try await session.start(input: speechInput)
                 }
-
-                var startOffset = Duration.zero
-                let firstInput = SpeechAudioInput(
-                    chunk: firstChunk,
-                    sourceFormat: naturalFormat,
-                    analysisFormat: analysisFormat,
-                    startOffset: startOffset
-                )
-                inputContinuation.yield(
-                    firstInput
-                )
-                startOffset += firstChunk.duration
-
-                while let chunk = try await iterator.next() {
-                    inputContinuation.yield(
-                        SpeechAudioInput(
-                            chunk: chunk,
-                            sourceFormat: MicrophoneAudioFormat(
-                                sampleRate: chunk.sampleRate,
-                                channelCount: chunk.channelCount
-                            ),
-                            analysisFormat: analysisFormat,
-                            startOffset: startOffset
-                        )
-                    )
-                    startOffset += chunk.duration
-                }
-                inputContinuation.finish()
                 try await analyzerTask.value
                 await resultTask.value
                 outputContinuation.finish()
             } catch let failure as PipelineFailure {
-                inputContinuation.finish(throwing: failure)
                 resultTask.cancel()
                 await teardownGate.teardown(session: session)
                 outputContinuation.finish(throwing: failure)
             } catch is CancellationError {
-                inputContinuation.finish(throwing: PipelineFailure.cancelled)
                 resultTask.cancel()
                 await teardownGate.teardown(session: session)
                 outputContinuation.finish(throwing: PipelineFailure.cancelled)
             } catch {
-                inputContinuation.finish(
-                    throwing: PipelineFailure.stage(.speechRecognition, .failed)
-                )
                 resultTask.cancel()
                 await teardownGate.teardown(session: session)
                 outputContinuation.finish(
@@ -484,7 +523,6 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
         }
 
         self.activeSession = session
-        self.inputContinuation = inputContinuation
         self.outputContinuation = outputContinuation
         self.processingTask = processingTask
         self.resultTask = resultTask
@@ -506,14 +544,12 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
             return
         }
 
-        inputContinuation?.finish(throwing: failure)
         processingTask?.cancel()
         resultTask?.cancel()
         await teardownGate?.teardown(session: session)
         outputContinuation?.finish(throwing: failure)
 
         activeSession = nil
-        inputContinuation = nil
         outputContinuation = nil
         processingTask = nil
         resultTask = nil

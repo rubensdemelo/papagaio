@@ -432,7 +432,7 @@ private actor TestSpeechRecognitionSession: SpeechRecognitionSession {
         }
     }
 
-    func start(input: SpeechAudioInputStream) async throws(PipelineFailure) {
+    func start(input: SpeechAudioInputSequence) async throws(PipelineFailure) {
         didStart = true
         do {
             for try await value in input {
