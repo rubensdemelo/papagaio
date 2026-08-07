@@ -120,6 +120,8 @@ Hardware-dependent capture and one-hour soak tests must be identified clearly wh
 - Preserve the simple product boundary when proposing abstractions or future-proofing.
 - Add comments for non-obvious constraints and decisions, not line-by-line narration.
 - Keep user-facing language concise and avoid calling the temporary speech-to-text pipeline a product feature.
+- After every implementation change, run `make final`.
+- Do not report the change complete if `make final` fails.
 
 ## Git workflow
 
