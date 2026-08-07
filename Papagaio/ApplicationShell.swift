@@ -12,24 +12,30 @@ enum FakeSessionStartOutcome: Sendable, Equatable {
 protocol SessionShellControlling: ObservableObject {
     var status: SessionStatus { get }
     var cards: [InsightCard] { get }
+    var feedback: SessionFeedbackSnapshot { get }
     var readiness: SessionReadiness? { get }
     var unavailableReason: UnavailableReason? { get }
     var failure: PipelineFailure? { get }
     var isPerformingPrimaryAction: Bool { get }
+    var isPerformingPauseAction: Bool { get }
     var primaryActionTitle: String { get }
+    var pauseActionTitle: String { get }
 
     func checkReadiness() async
     func performPrimaryAction() async
+    func performPauseAction() async
 }
 
 @MainActor
 final class FakeSessionController: SessionShellControlling {
     @Published private(set) var status: SessionStatus
     @Published private(set) var cards: [InsightCard]
+    @Published private(set) var feedback: SessionFeedbackSnapshot
     @Published private(set) var readiness: SessionReadiness?
     @Published private(set) var unavailableReason: UnavailableReason?
     @Published private(set) var failure: PipelineFailure?
     @Published private(set) var isPerformingPrimaryAction = false
+    @Published private(set) var isPerformingPauseAction = false
 
     private let startOutcome: FakeSessionStartOutcome
     private let transitionDelay: Duration
@@ -40,6 +46,7 @@ final class FakeSessionController: SessionShellControlling {
     init(
         status: SessionStatus = .stopped,
         cards: [InsightCard] = [],
+        feedback: SessionFeedbackSnapshot = .inactive,
         readiness: SessionReadiness? = nil,
         unavailableReason: UnavailableReason? = nil,
         failure: PipelineFailure? = nil,
@@ -48,6 +55,7 @@ final class FakeSessionController: SessionShellControlling {
     ) {
         self.status = status
         self.cards = cards
+        self.feedback = feedback
         self.readiness = readiness
         self.unavailableReason = unavailableReason
         self.failure = failure
@@ -61,9 +69,15 @@ final class FakeSessionController: SessionShellControlling {
             "Stop Listening"
         case .checkingAvailability:
             "Checking…"
+        case .paused:
+            "Stop Listening"
         case .stopped, .interrupted, .unavailable:
             "Start Listening"
         }
+    }
+
+    var pauseActionTitle: String {
+        status == .paused ? "Resume Listening" : "Pause Listening"
     }
 
     func checkReadiness() async {
@@ -76,6 +90,8 @@ final class FakeSessionController: SessionShellControlling {
         switch status {
         case .listening, .processing:
             await stop()
+        case .paused:
+            await stop()
         case .stopped, .interrupted, .unavailable:
             await start()
         case .checkingAvailability:
@@ -83,15 +99,30 @@ final class FakeSessionController: SessionShellControlling {
         }
     }
 
+    func performPauseAction() async {
+        guard !isPerformingPauseAction else { return }
+        guard status == .listening || status == .processing || status == .paused else {
+            return
+        }
+        isPerformingPauseAction = true
+        if transitionDelay > .zero {
+            try? await Task.sleep(for: transitionDelay)
+        }
+        status = status == .paused ? .listening : .paused
+        isPerformingPauseAction = false
+    }
+
     func inject(
         status: SessionStatus,
         cards: [InsightCard] = [],
+        feedback: SessionFeedbackSnapshot = .inactive,
         readiness: SessionReadiness? = nil,
         unavailableReason: UnavailableReason? = nil,
         failure: PipelineFailure? = nil
     ) {
         self.status = status
         self.cards = cards
+        self.feedback = feedback
         self.readiness = readiness
         self.unavailableReason = unavailableReason
         self.failure = failure
@@ -117,6 +148,14 @@ final class FakeSessionController: SessionShellControlling {
         switch startOutcome {
         case .listening:
             status = .listening
+            feedback = SessionFeedbackSnapshot(
+                audioInput: AudioInputSnapshot(
+                    level: 0,
+                    hasReceivedAudio: true,
+                    isMuted: false
+                ),
+                finalizedSpeechSegmentCount: 0
+            )
         case .unavailable(let reason):
             unavailableReason = reason
             status = .unavailable
@@ -134,6 +173,7 @@ final class FakeSessionController: SessionShellControlling {
         stopCount += 1
         isPerformingPrimaryAction = true
         cards.removeAll()
+        feedback = .inactive
         unavailableReason = nil
         failure = nil
         status = .stopped
@@ -172,7 +212,7 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            primaryAction
+            sessionControls
                 .padding(24)
         }
         .frame(minWidth: 480, idealWidth: 560, minHeight: 460, idealHeight: 620)
@@ -204,25 +244,48 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
             failure: controller.failure
         )
 
-        return HStack(spacing: 12) {
-            Image(systemName: presentation.symbolName)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(presentation.tint)
-                .frame(width: 28, height: 28)
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: presentation.symbolName)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(presentation.tint)
+                    .frame(width: 28, height: 28)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(presentation.title)
-                    .font(.headline)
-                Text(presentation.detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(presentation.title)
+                        .font(.headline)
+                    Text(presentation.detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Session status")
+            .accessibilityValue("\(presentation.title). \(presentation.detail)")
 
-            Spacer()
+            if controller.status == .listening || controller.status == .processing || controller.status == .paused
+                || controller.status == .interrupted || hasMicrophoneFailure {
+                VoiceFeedbackView(
+                    status: controller.status,
+                    feedback: controller.feedback,
+                    failure: controller.failure,
+                    unavailableReason: controller.unavailableReason
+                )
+            }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Session status")
-        .accessibilityValue("\(presentation.title). \(presentation.detail)")
+    }
+
+    private var hasMicrophoneFailure: Bool {
+        if controller.unavailableReason == .microphonePermissionDenied
+            || controller.unavailableReason == .audioInputUnavailable {
+            return true
+        }
+        if case .some(.stage(.audioCapture, _)) = controller.failure { return true }
+        if case .some(.unavailable(.microphonePermissionDenied)) = controller.failure { return true }
+        if case .some(.unavailable(.audioInputUnavailable)) = controller.failure { return true }
+        return false
     }
 
     @ViewBuilder
@@ -259,6 +322,32 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         }
     }
 
+    private var sessionControls: some View {
+        HStack(spacing: 12) {
+            if controller.status == .listening || controller.status == .processing || controller.status == .paused {
+                Button {
+                    Task { await controller.performPauseAction() }
+                } label: {
+                    Label(
+                        controller.pauseActionTitle,
+                        systemImage: controller.status == .paused ? "play.fill" : "pause.fill"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(controller.isPerformingPrimaryAction || controller.isPerformingPauseAction)
+                .accessibilityLabel(controller.pauseActionTitle)
+                .accessibilityHint(
+                    controller.status == .paused
+                        ? "Resumes microphone input and speech recognition."
+                        : "Temporarily pauses microphone input without ending this session."
+                )
+            }
+
+            primaryAction
+        }
+    }
+
     private var primaryAction: some View {
         Button {
             Task {
@@ -271,7 +360,7 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .keyboardShortcut("l", modifiers: [.command])
-        .disabled(controller.isPerformingPrimaryAction)
+        .disabled(controller.isPerformingPrimaryAction || controller.isPerformingPauseAction)
         .accessibilityLabel(controller.primaryActionTitle)
         .accessibilityHint(primaryActionHint)
         .help("\(controller.primaryActionTitle) (⌘L)")
@@ -280,6 +369,8 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
     private var primaryActionSymbol: String {
         switch controller.status {
         case .listening, .processing:
+            "stop.fill"
+        case .paused:
             "stop.fill"
         case .checkingAvailability:
             "hourglass"
@@ -292,11 +383,171 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         switch controller.status {
         case .listening, .processing:
             "Stops the current session and clears its insights. Keyboard shortcut Command-L."
+        case .paused:
+            "Stops the paused session and clears its insights. Keyboard shortcut Command-L."
         case .checkingAvailability:
             "Papagaio is checking whether listening can begin."
         case .stopped, .interrupted, .unavailable:
             "Starts a new listening session. Keyboard shortcut Command-L."
         }
+    }
+}
+
+enum VoiceFeedbackCondition: Equatable {
+    case waiting
+    case live
+    case muted
+    case paused
+    case connectionError
+}
+
+struct VoiceFeedbackPresentation: Equatable {
+    let condition: VoiceFeedbackCondition
+    let title: String
+    let detail: String
+    let symbolName: String
+    let tintName: SessionStatusPresentation.TintName
+
+    init(
+        status: SessionStatus,
+        feedback: SessionFeedbackSnapshot,
+        failure: PipelineFailure? = nil,
+        unavailableReason: UnavailableReason? = nil
+    ) {
+        let isAudioFailure: Bool = {
+            if case .some(.unavailable(.microphonePermissionDenied)) = failure { return true }
+            if case .some(.unavailable(.audioInputUnavailable)) = failure { return true }
+            if case .some(.stage(.audioCapture, _)) = failure { return true }
+            return unavailableReason == .microphonePermissionDenied
+                || unavailableReason == .audioInputUnavailable
+        }()
+
+        if isAudioFailure {
+            condition = .connectionError
+            title = "Microphone connection error"
+            detail = "Audio input stopped. Stop and start listening again."
+            symbolName = "mic.slash.fill"
+            tintName = .unavailable
+        } else if status == .paused {
+            condition = .paused
+            title = "Listening paused"
+            detail = "Microphone input and speech recognition are paused."
+            symbolName = "pause.circle.fill"
+            tintName = .warning
+        } else if feedback.audioInput.isMuted {
+            condition = .muted
+            title = "Microphone may be muted"
+            detail = "No input detected. Check the microphone mute button or input source."
+            symbolName = "mic.slash"
+            tintName = .warning
+        } else if feedback.audioInput.hasReceivedAudio {
+            condition = .live
+            title = "Audio input live"
+            detail = Self.speechDetail(for: feedback.finalizedSpeechSegmentCount)
+            symbolName = "mic.fill"
+            tintName = .active
+        } else {
+            condition = .waiting
+            title = "Listening for speech"
+            detail = "Microphone input is ready. Speak to generate live insights."
+            symbolName = "mic"
+            tintName = .active
+        }
+    }
+
+    private static func speechDetail(for count: Int) -> String {
+        guard count > 0 else {
+            return "Speech recognition is active. Temporary speech input stays on this Mac."
+        }
+        let noun = count == 1 ? "segment" : "segments"
+        return "Speech recognition is active. \(count) finalized \(noun) are informing insights."
+    }
+
+    var tint: Color {
+        switch tintName {
+        case .neutral: .secondary
+        case .active: .accentColor
+        case .warning: .orange
+        case .unavailable: .red
+        }
+    }
+}
+
+private struct VoiceFeedbackView: View {
+    let status: SessionStatus
+    let feedback: SessionFeedbackSnapshot
+    let failure: PipelineFailure?
+    let unavailableReason: UnavailableReason?
+
+    var body: some View {
+        let presentation = VoiceFeedbackPresentation(
+            status: status,
+            feedback: feedback,
+            failure: failure,
+            unavailableReason: unavailableReason
+        )
+
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                AudioInputMeterView(
+                    level: feedback.audioInput.level,
+                    isActive: presentation.condition == .live || presentation.condition == .waiting
+                )
+                .frame(width: 92, height: 38)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Label(presentation.title, systemImage: presentation.symbolName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(presentation.tint)
+                    Text(presentation.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            Label("Temporary, on-device processing. Nothing is saved.", systemImage: "lock.shield")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(presentation.tint.opacity(0.22), lineWidth: 1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Voice feedback")
+        .accessibilityValue("\(presentation.title). \(presentation.detail)")
+    }
+}
+
+private struct AudioInputMeterView: View {
+    let level: Float
+    let isActive: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 3) {
+            ForEach(0..<12, id: \.self) { index in
+                Capsule(style: .continuous)
+                    .fill(isActive ? Color.accentColor : Color.secondary.opacity(0.35))
+                    .frame(width: 4, height: barHeight(for: index))
+            }
+        }
+        .animation(.easeOut(duration: 0.12), value: level)
+        .accessibilityHidden(true)
+    }
+
+    private func barHeight(for index: Int) -> CGFloat {
+        let centerDistance = abs(Float(index) - 5.5) / 5.5
+        let threshold = centerDistance * 0.38
+        let normalized = max(0, min(1, (level - threshold) / 0.62))
+        return 6 + CGFloat(normalized) * 28
     }
 }
 
@@ -466,6 +717,11 @@ struct SessionStatusPresentation: Equatable {
             detail = "Refreshing live insights."
             symbolName = "sparkles"
             tintName = .active
+        case .paused:
+            title = "Paused"
+            detail = "Audio input is paused. Your session remains open."
+            symbolName = "pause.circle.fill"
+            tintName = .warning
         case .interrupted:
             title = "Interrupted"
             detail = "Listening stopped unexpectedly. Start again when ready."
@@ -517,6 +773,10 @@ struct EmptyStatePresentation: Equatable {
             title = "Insights are on the way"
             detail = "Papagaio is processing the latest meeting context."
             symbolName = "sparkles"
+        case .paused:
+            title = "Listening is paused"
+            detail = "Resume listening when you are ready."
+            symbolName = "pause.circle"
         case .interrupted:
             title = "Listening was interrupted"
             detail = "Start listening to try again."

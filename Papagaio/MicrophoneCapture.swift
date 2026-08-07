@@ -41,6 +41,52 @@ struct MicrophoneAudioFormat: Sendable, Equatable {
     let channelCount: Int
 }
 
+final class AudioInputLevelMonitor: @unchecked Sendable {
+    private let lock = NSLock()
+    private var lastLevel: Float = 0
+    private var lastUpdate = Date.distantPast
+    private var lastSignal = Date.distantPast
+    private var hasReceivedAudio = false
+
+    func update(level: Float) {
+        // Telemetry must never make the real-time capture callback wait on UI polling.
+        guard lock.try() else { return }
+        defer { lock.unlock() }
+
+        let now = Date()
+        lastLevel = min(1, max(0, level))
+        lastUpdate = now
+        hasReceivedAudio = true
+        if level >= 0.015 {
+            lastSignal = now
+        }
+    }
+
+    func snapshot() -> AudioInputSnapshot {
+        lock.lock()
+        defer { lock.unlock() }
+
+        guard hasReceivedAudio else { return .inactive }
+        let now = Date()
+        let elapsed = max(0, now.timeIntervalSince(lastUpdate))
+        let decayedLevel = lastLevel * Float(exp(-elapsed * 8))
+        return AudioInputSnapshot(
+            level: decayedLevel,
+            hasReceivedAudio: true,
+            isMuted: now.timeIntervalSince(lastSignal) >= 2
+        )
+    }
+
+    func reset() {
+        lock.lock()
+        defer { lock.unlock() }
+        lastLevel = 0
+        lastUpdate = .distantPast
+        lastSignal = .distantPast
+        hasReceivedAudio = false
+    }
+}
+
 protocol MicrophoneEngineDriver: AnyObject, Sendable {
     var inputFormat: MicrophoneAudioFormat { get }
     func installTap(
@@ -92,10 +138,13 @@ final class AVAudioEngineMicrophoneDriver: MicrophoneEngineDriver, @unchecked Se
             }
 
             var samples = [Float](repeating: 0, count: frameCount * channelCount)
+            var meanSquare: Float = 0
             for channel in 0..<channelCount {
                 let source = channelData[channel]
                 for frame in 0..<frameCount {
-                    samples[(frame * channelCount) + channel] = source[frame]
+                    let sample = source[frame]
+                    samples[(frame * channelCount) + channel] = sample
+                    meanSquare += sample * sample
                 }
             }
 
@@ -104,7 +153,8 @@ final class AVAudioEngineMicrophoneDriver: MicrophoneEngineDriver, @unchecked Se
                 duration: .seconds(Double(frameCount) / buffer.format.sampleRate),
                 sampleRate: buffer.format.sampleRate,
                 channelCount: channelCount,
-                samples: samples
+                samples: samples,
+                inputLevel: min(1, max(0, sqrt(meanSquare / Float(samples.count)) * 4))
             )
             sequenceNumber &+= 1
             handler(chunk)
@@ -332,6 +382,7 @@ actor AVAudioEngineMicrophoneCapture: SessionAudioCapture {
     private let bufferSize: UInt32
     private let queueCapacity: Int
     private let diagnosticsStore: MicrophoneCaptureDiagnostics
+    private let inputLevelMonitor: AudioInputLevelMonitor
 
     private var queue: BoundedAudioQueue?
     private var activeStream: AudioStream?
@@ -344,7 +395,8 @@ actor AVAudioEngineMicrophoneCapture: SessionAudioCapture {
         permissionProvider: any MicrophonePermissionProviding = SystemMicrophonePermissionProvider(),
         bufferSize: UInt32 = 1_024,
         queueCapacity: Int = 8,
-        diagnostics: MicrophoneCaptureDiagnostics = MicrophoneCaptureDiagnostics()
+        diagnostics: MicrophoneCaptureDiagnostics = MicrophoneCaptureDiagnostics(),
+        inputLevelMonitor: AudioInputLevelMonitor = AudioInputLevelMonitor()
     ) {
         precondition(bufferSize > 0)
         precondition(queueCapacity > 0)
@@ -353,6 +405,7 @@ actor AVAudioEngineMicrophoneCapture: SessionAudioCapture {
         self.bufferSize = bufferSize
         self.queueCapacity = queueCapacity
         diagnosticsStore = diagnostics
+        self.inputLevelMonitor = inputLevelMonitor
     }
 
     func permission() async -> MicrophonePermission {
@@ -375,6 +428,10 @@ actor AVAudioEngineMicrophoneCapture: SessionAudioCapture {
 
     func diagnostics() async -> MicrophoneCaptureDiagnosticsSnapshot {
         diagnosticsStore.snapshot()
+    }
+
+    func inputSnapshot() async -> AudioInputSnapshot {
+        inputLevelMonitor.snapshot()
     }
 
     func audioFormat() async -> MicrophoneAudioFormat? {
@@ -427,7 +484,8 @@ actor AVAudioEngineMicrophoneCapture: SessionAudioCapture {
         )
 
         do {
-            engine.installTap(bufferSize: bufferSize) { [queue, diagnosticsStore] chunk in
+            engine.installTap(bufferSize: bufferSize) { [queue, diagnosticsStore, inputLevelMonitor] chunk in
+                inputLevelMonitor.update(level: chunk.inputLevel)
                 let outcome = queue.enqueue(chunk)
                 diagnosticsStore.record(outcome.result, queueDepth: outcome.queueDepth)
             }
@@ -464,6 +522,7 @@ actor AVAudioEngineMicrophoneCapture: SessionAudioCapture {
 
         isRunning = false
         activeStream = nil
+        inputLevelMonitor.reset()
         engine.removeTap()
         engine.stop()
         queue?.finish(throwing: failure)

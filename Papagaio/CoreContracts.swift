@@ -715,6 +715,9 @@ protocol SessionLifecycle: AnyObject {
     func checkAvailability() async -> Availability
     func checkReadiness() async -> SessionReadiness
     func start() async throws(PipelineFailure)
+    func pause() async
+    func resume() async throws(PipelineFailure)
     func stop() async
     func cancel() async
+    func feedbackSnapshot() async -> SessionFeedbackSnapshot
 }
