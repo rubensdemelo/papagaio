@@ -213,16 +213,18 @@ final class SystemSpeechRecognitionSession: SpeechRecognitionSession, @unchecked
             continuation in
             Task {
                 do {
+                    var bufferConverter: SpeechAudioBufferConverter?
                     for try await audioInput in input {
-                        let buffer = try makePCMBuffer(for: audioInput)
-                        let input = AnalyzerInput(
-                            buffer: buffer,
-                            bufferStartTime: CMTime(
-                                seconds: durationInSeconds(audioInput.startOffset),
-                                preferredTimescale: 1_000_000
+                        if bufferConverter == nil {
+                            bufferConverter = try SpeechAudioBufferConverter(
+                                sourceFormat: audioInput.sourceFormat,
+                                analysisFormat: audioInput.analysisFormat
                             )
+                        }
+                        let buffer = try bufferConverter!.convert(audioInput)
+                        continuation.yield(
+                            makeAnalyzerInput(buffer: buffer)
                         )
-                        continuation.yield(input)
                     }
                     continuation.finish()
                 } catch let failure as PipelineFailure {
@@ -430,13 +432,14 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
                 }
 
                 var startOffset = Duration.zero
+                let firstInput = SpeechAudioInput(
+                    chunk: firstChunk,
+                    sourceFormat: naturalFormat,
+                    analysisFormat: analysisFormat,
+                    startOffset: startOffset
+                )
                 inputContinuation.yield(
-                    SpeechAudioInput(
-                        chunk: firstChunk,
-                        sourceFormat: naturalFormat,
-                        analysisFormat: analysisFormat,
-                        startOffset: startOffset
-                    )
+                    firstInput
                 )
                 startOffset += firstChunk.duration
 
@@ -551,7 +554,55 @@ private final class ConverterInputState: @unchecked Sendable {
     }
 }
 
-private func makePCMBuffer(for input: SpeechAudioInput) throws(PipelineFailure) -> AVAudioPCMBuffer {
+final class SpeechAudioBufferConverter: @unchecked Sendable {
+    private let sourceFormat: MicrophoneAudioFormat
+    private let analysisFormat: MicrophoneAudioFormat
+    private let converter: AVAudioConverter?
+
+    init(
+        sourceFormat: MicrophoneAudioFormat,
+        analysisFormat: MicrophoneAudioFormat
+    ) throws(PipelineFailure) {
+        guard let sourceAVFormat = makeAVAudioFormat(sourceFormat),
+              let analysisAVFormat = makeAVAudioFormat(analysisFormat) else {
+            throw .stage(.speechRecognition, .invalidState)
+        }
+
+        self.sourceFormat = sourceFormat
+        self.analysisFormat = analysisFormat
+        if sourceAVFormat.isEqual(analysisAVFormat) {
+            converter = nil
+        } else {
+            guard let converter = AVAudioConverter(
+                from: sourceAVFormat,
+                to: analysisAVFormat
+            ) else {
+                throw .stage(.speechRecognition, .invalidState)
+            }
+            self.converter = converter
+        }
+    }
+
+    func convert(_ input: SpeechAudioInput) throws(PipelineFailure) -> AVAudioPCMBuffer {
+        guard input.sourceFormat == sourceFormat,
+              input.analysisFormat == analysisFormat else {
+            throw .stage(.speechRecognition, .invalidState)
+        }
+        return try makePCMBuffer(for: input, using: converter)
+    }
+}
+
+func makeAnalyzerInput(buffer: AVAudioPCMBuffer) -> AnalyzerInput {
+    // The converter may resample or prime audio, so the source timeline is not
+    // accurate enough to provide an explicit bufferStartTime here. SpeechAnalyzer
+    // can infer a contiguous timeline from the converted buffers.
+    AnalyzerInput(buffer: buffer)
+}
+
+private func makePCMBuffer(
+    for input: SpeechAudioInput,
+    using converter: AVAudioConverter?
+) throws(PipelineFailure) -> AVAudioPCMBuffer {
     guard let sourceFormat = makeAVAudioFormat(input.sourceFormat),
           let targetFormat = makeAVAudioFormat(input.analysisFormat) else {
         throw .stage(.speechRecognition, .invalidState)
@@ -584,7 +635,7 @@ private func makePCMBuffer(for input: SpeechAudioInput) throws(PipelineFailure) 
     guard !sourceFormat.isEqual(targetFormat) else {
         return sourceBuffer
     }
-    guard let converter = AVAudioConverter(from: sourceFormat, to: targetFormat) else {
+    guard let converter else {
         throw .stage(.speechRecognition, .invalidState)
     }
 
@@ -605,7 +656,10 @@ private func makePCMBuffer(for input: SpeechAudioInput) throws(PipelineFailure) 
         error: &conversionError
     ) { _, inputStatus in
         guard !inputState.didProvideInput else {
-            inputStatus.pointee = .endOfStream
+            // This is a live stream. The converter may receive another
+            // microphone buffer on the next call, so this buffer only ran
+            // dry; it did not reach the end of the audio stream.
+            inputStatus.pointee = .noDataNow
             return nil
         }
         inputState.didProvideInput = true
@@ -626,9 +680,4 @@ private func speechFailure(for error: Error) -> PipelineFailure {
         return failure
     }
     return .stage(.speechRecognition, .failed)
-}
-
-private func durationInSeconds(_ duration: Duration) -> Double {
-    let components = duration.components
-    return Double(components.seconds) + Double(components.attoseconds) / 1_000_000_000_000_000_000
 }

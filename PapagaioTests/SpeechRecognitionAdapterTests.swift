@@ -1,6 +1,57 @@
+@preconcurrency import AVFAudio
 import XCTest
 
 final class SpeechRecognitionAdapterTests: XCTestCase {
+    func testAnalyzerInputUsesImplicitContiguousTimeline() throws {
+        let format = try XCTUnwrap(
+            AVAudioFormat(
+                commonFormat: .pcmFormatFloat32,
+                sampleRate: 16_000,
+                channels: 1,
+                interleaved: false
+            )
+        )
+        let buffer = try XCTUnwrap(
+            AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: 160
+            )
+        )
+
+        let input = makeAnalyzerInput(buffer: buffer)
+
+        XCTAssertNil(input.bufferStartTime)
+    }
+
+    func testAudioBufferConverterReusesOneConversionStream() throws {
+        let converter = try SpeechAudioBufferConverter(
+            sourceFormat: MicrophoneAudioFormat(sampleRate: 48_000, channelCount: 1),
+            analysisFormat: MicrophoneAudioFormat(sampleRate: 16_000, channelCount: 1)
+        )
+
+        let first = try converter.convert(
+            SpeechAudioInput(
+                chunk: syntheticChunk(sequenceNumber: 0),
+                sourceFormat: MicrophoneAudioFormat(sampleRate: 48_000, channelCount: 1),
+                analysisFormat: MicrophoneAudioFormat(sampleRate: 16_000, channelCount: 1),
+                startOffset: .zero
+            )
+        )
+        let second = try converter.convert(
+            SpeechAudioInput(
+                chunk: syntheticChunk(sequenceNumber: 1),
+                sourceFormat: MicrophoneAudioFormat(sampleRate: 48_000, channelCount: 1),
+                analysisFormat: MicrophoneAudioFormat(sampleRate: 16_000, channelCount: 1),
+                startOffset: .milliseconds(20)
+            )
+        )
+
+        XCTAssertEqual(first.format.sampleRate, 16_000)
+        XCTAssertEqual(second.format.sampleRate, 16_000)
+        XCTAssertGreaterThan(first.frameLength, 0)
+        XCTAssertGreaterThan(second.frameLength, 0)
+    }
+
     func testAssetInventoryStatesAreRepresentedExplicitly() {
         XCTAssertEqual(SpeechAssetState(.unsupported), .unsupported)
         XCTAssertEqual(SpeechAssetState(.supported), .supported)
