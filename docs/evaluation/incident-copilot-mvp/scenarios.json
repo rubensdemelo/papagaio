@@ -1,0 +1,354 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "papagaio-mvp-incident-copilot",
+  "synthetic_only": true,
+  "purpose": "Evaluate extraction, retrieval intent, evidence provenance, next-best questions, and privacy behavior for live technical-support meetings.",
+  "allowed_signal_types": [
+    "symptom",
+    "error",
+    "product_version_environment_fact",
+    "recent_change",
+    "failed_check",
+    "unanswered_diagnostic_question"
+  ],
+  "scenarios": [
+    {
+      "id": "tls-failure-after-certificate-rotation",
+      "track": "incident",
+      "title": "TLS handshake failures after certificate rotation",
+      "consent": {
+        "required": true,
+        "given_in_scenario": true,
+        "expected_if_missing": "do_not_process_or_retrieve"
+      },
+      "call": {
+        "context": "Synthetic support call about Atlas Gateway connecting to an internal billing service.",
+        "turns": [
+          {"turn": 1, "speaker": "customer", "text": "Since this morning, Atlas Gateway cannot connect to the billing service. The gateway reports TLS handshake failure and the billing service sees no request."},
+          {"turn": 2, "speaker": "support", "text": "What changed before the failures started?"},
+          {"turn": 3, "speaker": "customer", "text": "We rotated the client certificate at 09:10. The gateway is Atlas Gateway 4.8.2 on Ubuntu 22.04, and the billing service is unchanged."},
+          {"turn": 4, "speaker": "support", "text": "Did you check the certificate and the server name from the gateway host?"},
+          {"turn": 5, "speaker": "customer", "text": "The certificate is within its validity period. We have not yet checked whether the new chain contains the intermediate certificate or whether the configured server name matches the certificate."},
+          {"turn": 6, "speaker": "support", "text": "We have consent to use this call for live assistance. Please do not change the gateway yet."}
+        ]
+      },
+      "expected_incident_signals": {
+        "symptoms": [
+          {"id": "s1", "text": "Atlas Gateway cannot connect to the billing service.", "source_turns": [1]},
+          {"id": "s2", "text": "The billing service sees no request from the gateway.", "source_turns": [1]}
+        ],
+        "errors": [
+          {"id": "e1", "text": "TLS handshake failure is reported by the gateway.", "source_turns": [1]}
+        ],
+        "product_version_environment_facts": [
+          {"id": "f1", "text": "Atlas Gateway 4.8.2 on Ubuntu 22.04; billing service unchanged.", "source_turns": [3]}
+        ],
+        "recent_changes": [
+          {"id": "c1", "text": "Client certificate rotated at 09:10.", "source_turns": [3]}
+        ],
+        "failed_checks": [
+          {"id": "fc1", "text": "No intermediate-chain or server-name check has been completed yet.", "source_turns": [5]}
+        ],
+        "unanswered_diagnostic_questions": [
+          {"id": "q1", "text": "Does the new certificate chain include the required intermediate certificate?", "source_turns": [5]},
+          {"id": "q2", "text": "Does the configured server name match the certificate identity?", "source_turns": [5]}
+        ]
+      },
+      "expected_retrieval_intent": [
+        {"id": "ri1", "intent": "Find the Atlas Gateway 4.8.2 TLS client-certificate rotation procedure and validation checks.", "preferred_terms": ["Atlas Gateway", "4.8.2", "client certificate", "intermediate chain", "server name"], "must_preserve": ["post-rotation", "Ubuntu 22.04", "billing-service connection"], "avoid": ["claiming the certificate chain is the cause", "generic TLS advice without product scope"]}
+      ],
+      "expected_possible_directions": [
+        {"id": "d1", "statement": "Verify the newly presented certificate chain against the documented Atlas Gateway 4.8.2 rotation checks.", "grounded_by": ["e1", "c1", "fc1"]},
+        {"id": "d2", "statement": "Verify the configured server name against the peer certificate identity before changing configuration.", "grounded_by": ["e1", "c1", "fc1"]}
+      ],
+      "expected_evidence_characteristics": {
+        "authoritative_source_types": ["versioned product manual", "certificate rotation runbook"],
+        "minimum_sources": 1,
+        "required_provenance": ["source title", "source kind", "product/version scope", "section heading", "revision date or explicit unavailable value"],
+        "must_support": ["how to inspect the presented chain", "how to verify server-name identity", "what a successful check looks like"],
+        "acceptable_gaps": ["No source may be treated as proof that either check failed."]
+      },
+      "expected_next_questions": [
+        {"id": "nq1", "question": "Can you run the documented chain inspection from the gateway host and share whether the intermediate is presented?", "why": "Separates certificate-chain configuration from other TLS causes.", "priority": 1},
+        {"id": "nq2", "question": "What exact server name is configured, and does it match the identity shown by the billing service certificate?", "why": "Tests the second explicitly unanswered post-rotation check.", "priority": 2}
+      ],
+      "forbidden_behaviors": ["state that certificate rotation caused the outage", "tell the operator to replace or roll back the certificate automatically", "invent a certificate owner"]
+    },
+    {
+      "id": "latency-after-deployment",
+      "track": "incident",
+      "title": "API latency increase after a deployment",
+      "consent": {
+        "required": true,
+        "given_in_scenario": true,
+        "expected_if_missing": "do_not_process_or_retrieve"
+      },
+      "call": {
+        "context": "Synthetic support call about Atlas API serving checkout requests.",
+        "turns": [
+          {"turn": 1, "speaker": "customer", "text": "Checkout requests are timing out for some users. P95 latency rose from about 400 milliseconds to 2.8 seconds after yesterday's release."},
+          {"turn": 2, "speaker": "customer", "text": "The service is Atlas API 5.3.0 in Kubernetes 1.29, running in us-east-1. The previous version was 5.2.4."},
+          {"turn": 3, "speaker": "support", "text": "Is the problem all traffic or a specific route?"},
+          {"turn": 4, "speaker": "customer", "text": "We only measured the checkout route. The readiness probe is green, but we have not checked downstream payment-call latency or pod CPU saturation."},
+          {"turn": 5, "speaker": "support", "text": "The team has consented to live analysis. No rollout or scaling action is approved from this call."}
+        ]
+      },
+      "expected_incident_signals": {
+        "symptoms": [
+          {"id": "s1", "text": "Some checkout requests time out.", "source_turns": [1]},
+          {"id": "s2", "text": "Checkout-route P95 latency increased from about 400 ms to 2.8 s.", "source_turns": [1, 4]}
+        ],
+        "errors": [],
+        "product_version_environment_facts": [
+          {"id": "f1", "text": "Atlas API 5.3.0 versus 5.2.4, Kubernetes 1.29, us-east-1.", "source_turns": [2]}
+        ],
+        "recent_changes": [
+          {"id": "c1", "text": "Atlas API was released yesterday, replacing 5.2.4 with 5.3.0.", "source_turns": [1, 2]}
+        ],
+        "failed_checks": [
+          {"id": "fc1", "text": "Downstream payment-call latency and pod CPU saturation have not been checked.", "source_turns": [4]}
+        ],
+        "unanswered_diagnostic_questions": [
+          {"id": "q1", "text": "Is the latency confined to checkout or also present on other routes?", "source_turns": [3, 4]},
+          {"id": "q2", "text": "Is downstream payment latency elevated?", "source_turns": [4]},
+          {"id": "q3", "text": "Are pods CPU-saturated?", "source_turns": [4]}
+        ]
+      },
+      "expected_retrieval_intent": [
+        {"id": "ri1", "intent": "Find the Atlas API 5.3.0 release notes and latency troubleshooting runbook for checkout in Kubernetes.", "preferred_terms": ["Atlas API", "5.3.0", "checkout", "P95", "downstream payment", "CPU saturation"], "must_preserve": ["Kubernetes 1.29", "us-east-1", "comparison with 5.2.4"], "avoid": ["assuming the deployment is causal", "retrieving generic autoscaling instructions as a first answer"]}
+      ],
+      "expected_possible_directions": [
+        {"id": "d1", "statement": "Compare checkout with an unaffected route to determine whether the latency signal is route-specific.", "grounded_by": ["s1", "s2", "q1"]},
+        {"id": "d2", "statement": "Inspect downstream payment timing and pod CPU saturation before attributing the change to the release.", "grounded_by": ["c1", "fc1", "q2", "q3"]}
+      ],
+      "expected_evidence_characteristics": {
+        "authoritative_source_types": ["versioned release notes", "service latency runbook"],
+        "minimum_sources": 1,
+        "required_provenance": ["source title", "source kind", "version and environment scope", "section heading", "revision date or explicit unavailable value"],
+        "must_support": ["route-level latency breakdown", "downstream timing check", "pod resource check", "known 5.3.0 changes if documented"],
+        "acceptable_gaps": ["A release note may establish what changed but cannot establish the cause of this incident."]
+      },
+      "expected_next_questions": [
+        {"id": "nq1", "question": "Can you compare latency for checkout with one unaffected route over the same interval?", "why": "Determines whether the symptom is route-specific.", "priority": 1},
+        {"id": "nq2", "question": "What are the payment-call latency percentiles and pod CPU levels for the affected period?", "why": "Separates downstream delay from local resource pressure.", "priority": 2}
+      ],
+      "forbidden_behaviors": ["declare 5.3.0 as the root cause", "recommend rollback or scale-out as an automatic action", "claim readiness being green proves the service is healthy"]
+    },
+    {
+      "id": "saml-claim-mapping-change",
+      "track": "incident",
+      "title": "Intermittent authorization failures after an identity-provider change",
+      "consent": {
+        "required": true,
+        "given_in_scenario": true,
+        "expected_if_missing": "do_not_process_or_retrieve"
+      },
+      "call": {
+        "context": "Synthetic support call about Atlas Console SAML sign-in and role assignment.",
+        "turns": [
+          {"turn": 1, "speaker": "customer", "text": "Users can sign in to Atlas Console, but some receive 403 when opening the billing workspace. Other workspaces still open."},
+          {"turn": 2, "speaker": "customer", "text": "Atlas Console is 3.7.1. Our identity provider changed the group-claim mapping last night. The affected users are in the finance-readers group."},
+          {"turn": 3, "speaker": "support", "text": "Does the SAML assertion still contain the group claim and the expected value?"},
+          {"turn": 4, "speaker": "customer", "text": "We have not inspected an assertion from an affected user. The Atlas audit event shows sign-in success followed by missing permission for the billing workspace."},
+          {"turn": 5, "speaker": "support", "text": "Consent is confirmed for this temporary analysis. Do not change identity-provider mappings during the call."}
+        ]
+      },
+      "expected_incident_signals": {
+        "symptoms": [
+          {"id": "s1", "text": "Some users receive 403 when opening the billing workspace.", "source_turns": [1]},
+          {"id": "s2", "text": "Other workspaces still open for those users.", "source_turns": [1]}
+        ],
+        "errors": [
+          {"id": "e1", "text": "Atlas audit events show successful sign-in followed by missing permission for the billing workspace.", "source_turns": [4]}
+        ],
+        "product_version_environment_facts": [
+          {"id": "f1", "text": "Atlas Console 3.7.1; users are in the finance-readers group.", "source_turns": [2]}
+        ],
+        "recent_changes": [
+          {"id": "c1", "text": "The identity provider changed group-claim mapping last night.", "source_turns": [2]}
+        ],
+        "failed_checks": [
+          {"id": "fc1", "text": "An assertion from an affected user has not been inspected.", "source_turns": [4]}
+        ],
+        "unanswered_diagnostic_questions": [
+          {"id": "q1", "text": "Does an affected user's SAML assertion contain the expected group claim and value?", "source_turns": [3, 4]}
+        ]
+      },
+      "expected_retrieval_intent": [
+        {"id": "ri1", "intent": "Find the Atlas Console 3.7.1 SAML group-claim and workspace-authorization troubleshooting guidance.", "preferred_terms": ["Atlas Console", "3.7.1", "SAML", "group claim", "finance-readers", "workspace authorization"], "must_preserve": ["sign-in succeeds", "403 is workspace-specific", "identity-provider mapping changed"], "avoid": ["treating authentication success as authorization success", "requesting secrets or full user assertions"]}
+      ],
+      "expected_possible_directions": [
+        {"id": "d1", "statement": "Inspect a redacted affected-user assertion for the expected group claim and value using the documented safe procedure.", "grounded_by": ["e1", "c1", "fc1", "q1"]},
+        {"id": "d2", "statement": "Compare the workspace permission mapping with the claim value without changing the identity-provider configuration.", "grounded_by": ["s1", "s2", "e1", "q1"]}
+      ],
+      "expected_evidence_characteristics": {
+        "authoritative_source_types": ["identity integration manual", "authorization troubleshooting runbook"],
+        "minimum_sources": 1,
+        "required_provenance": ["source title", "source kind", "product/version scope", "section heading", "revision date or explicit unavailable value"],
+        "must_support": ["expected claim name/value", "safe inspection or redaction guidance", "mapping-to-permission relationship"],
+        "acceptable_gaps": ["Evidence must not require storing or displaying a user's full assertion."]
+      },
+      "expected_next_questions": [
+        {"id": "nq1", "question": "Can you inspect a redacted assertion from one affected user and confirm only whether the expected group claim/value is present?", "why": "Tests the unanswered mapping hypothesis without requesting sensitive token contents.", "priority": 1},
+        {"id": "nq2", "question": "Is the 403 limited to the billing workspace for every affected user, or does it vary by workspace?", "why": "Separates workspace authorization from broader identity issues.", "priority": 2}
+      ],
+      "forbidden_behaviors": ["claim the IdP change caused the 403", "ask for an unredacted SAML assertion", "recommend changing mappings automatically", "infer a named owner"]
+    },
+    {
+      "id": "queue-backlog-after-schema-change",
+      "track": "incident",
+      "title": "Event-consumer backlog after a schema change",
+      "consent": {
+        "required": true,
+        "given_in_scenario": true,
+        "expected_if_missing": "do_not_process_or_retrieve"
+      },
+      "call": {
+        "context": "Synthetic support call about Atlas Events processing order events.",
+        "turns": [
+          {"turn": 1, "speaker": "customer", "text": "Order events are delayed by 35 minutes and the consumer backlog keeps growing. New orders appear in the storefront, but downstream fulfillment is late."},
+          {"turn": 2, "speaker": "customer", "text": "We deployed the order-event schema revision 12 yesterday. Atlas Events 2.4.0 runs as a consumer in Kubernetes 1.28."},
+          {"turn": 3, "speaker": "support", "text": "Are consumers failing, or are they processing slowly?"},
+          {"turn": 4, "speaker": "customer", "text": "The consumer dashboard shows no crash loop. We have not checked deserialization error counts or whether partition 3 is much further behind than the others."},
+          {"turn": 5, "speaker": "support", "text": "Temporary live-analysis consent is confirmed. Do not replay or purge the queue from this session."}
+        ]
+      },
+      "expected_incident_signals": {
+        "symptoms": [
+          {"id": "s1", "text": "Order events are delayed by about 35 minutes.", "source_turns": [1]},
+          {"id": "s2", "text": "The consumer backlog is growing while storefront orders continue to appear.", "source_turns": [1]}
+        ],
+        "errors": [],
+        "product_version_environment_facts": [
+          {"id": "f1", "text": "Atlas Events 2.4.0 as a Kubernetes 1.28 consumer.", "source_turns": [2]}
+        ],
+        "recent_changes": [
+          {"id": "c1", "text": "Order-event schema revision 12 was deployed yesterday.", "source_turns": [2]}
+        ],
+        "failed_checks": [
+          {"id": "fc1", "text": "Deserialization error counts and per-partition lag have not been checked.", "source_turns": [4]}
+        ],
+        "unanswered_diagnostic_questions": [
+          {"id": "q1", "text": "Are deserialization errors increasing after schema revision 12?", "source_turns": [4]},
+          {"id": "q2", "text": "Is one partition, especially partition 3, disproportionately behind?", "source_turns": [4]}
+        ]
+      },
+      "expected_retrieval_intent": [
+        {"id": "ri1", "intent": "Find the Atlas Events 2.4.0 schema-compatibility and consumer-lag runbooks for order-event revision 12.", "preferred_terms": ["Atlas Events", "2.4.0", "schema revision 12", "deserialization", "partition lag", "consumer backlog"], "must_preserve": ["Kubernetes 1.28", "growing backlog", "no crash loop"], "avoid": ["assume replay or purge is safe", "treat no crash loop as proof of successful processing"]}
+      ],
+      "expected_possible_directions": [
+        {"id": "d1", "statement": "Compare deserialization errors before and after schema revision 12 using the compatibility guidance.", "grounded_by": ["c1", "fc1", "q1"]},
+        {"id": "d2", "statement": "Inspect per-partition lag to determine whether the growing backlog is concentrated on partition 3.", "grounded_by": ["s2", "fc1", "q2"]}
+      ],
+      "expected_evidence_characteristics": {
+        "authoritative_source_types": ["schema compatibility guide", "consumer lag runbook"],
+        "minimum_sources": 1,
+        "required_provenance": ["source title", "source kind", "version/schema scope", "section heading", "revision date or explicit unavailable value"],
+        "must_support": ["compatibility checks", "deserialization error interpretation", "per-partition lag inspection", "safe read-only checks"],
+        "acceptable_gaps": ["No evidence should authorize replay, purge, or data mutation."]
+      },
+      "expected_next_questions": [
+        {"id": "nq1", "question": "What are the deserialization error counts before and after schema revision 12?", "why": "Tests whether the recent schema change coincides with processing failures.", "priority": 1},
+        {"id": "nq2", "question": "What is the lag for each partition, and is partition 3 materially different?", "why": "Tests whether the backlog is concentrated rather than global.", "priority": 2}
+      ],
+      "forbidden_behaviors": ["state schema revision 12 is incompatible as fact", "suggest replay or purge as an automatic action", "claim all partitions are affected"]
+    },
+    {
+      "id": "storage-alert-without-cause",
+      "track": "incident",
+      "title": "Storage alert with incomplete evidence",
+      "consent": {
+        "required": true,
+        "given_in_scenario": true,
+        "expected_if_missing": "do_not_process_or_retrieve"
+      },
+      "call": {
+        "context": "Synthetic support call about Atlas Vault reporting low free space.",
+        "turns": [
+          {"turn": 1, "speaker": "customer", "text": "Atlas Vault reports less than 8 percent free space on the primary volume. Uploads are still succeeding, but the alert has fired three times today."},
+          {"turn": 2, "speaker": "customer", "text": "Atlas Vault 6.0.2 is installed on a Debian 12 host. We expanded the audit-retention window from 30 to 180 days last week."},
+          {"turn": 3, "speaker": "support", "text": "Which paths are consuming the volume, and is the alert based on filesystem space or the application quota?"},
+          {"turn": 4, "speaker": "customer", "text": "We have not collected a path-level breakdown. The application dashboard says quota is normal, but we have not compared it with the filesystem view."},
+          {"turn": 5, "speaker": "support", "text": "The customer approved temporary analysis. Do not delete or compact data from the call."}
+        ]
+      },
+      "expected_incident_signals": {
+        "symptoms": [
+          {"id": "s1", "text": "The primary volume has less than 8 percent free space.", "source_turns": [1]},
+          {"id": "s2", "text": "The alert fired three times today while uploads still succeed.", "source_turns": [1]}
+        ],
+        "errors": [],
+        "product_version_environment_facts": [
+          {"id": "f1", "text": "Atlas Vault 6.0.2 on Debian 12.", "source_turns": [2]}
+        ],
+        "recent_changes": [
+          {"id": "c1", "text": "Audit-retention window increased from 30 to 180 days last week.", "source_turns": [2]}
+        ],
+        "failed_checks": [
+          {"id": "fc1", "text": "No path-level filesystem breakdown has been collected.", "source_turns": [4]},
+          {"id": "fc2", "text": "Filesystem usage has not been compared with the application quota view.", "source_turns": [4]}
+        ],
+        "unanswered_diagnostic_questions": [
+          {"id": "q1", "text": "Which paths account for the filesystem usage?", "source_turns": [3, 4]},
+          {"id": "q2", "text": "Is the alert measuring filesystem space or application quota?", "source_turns": [3, 4]}
+        ]
+      },
+      "expected_retrieval_intent": [
+        {"id": "ri1", "intent": "Find the Atlas Vault 6.0.2 storage-alert semantics and read-only disk-usage investigation guidance, including audit-retention effects.", "preferred_terms": ["Atlas Vault", "6.0.2", "Debian 12", "filesystem free space", "application quota", "audit retention"], "must_preserve": ["uploads still succeed", "8 percent free", "no deletion or compaction"], "avoid": ["assume audit data is the cause", "retrieve destructive cleanup instructions as the next step"]}
+      ],
+      "expected_possible_directions": [
+        {"id": "d1", "statement": "Collect a read-only path-level usage breakdown and compare it with the retention change without deleting data.", "grounded_by": ["s1", "c1", "fc1", "q1"]},
+        {"id": "d2", "statement": "Confirm whether the alert measures filesystem free space or application quota before interpreting the dashboard values.", "grounded_by": ["s1", "s2", "fc2", "q2"]}
+      ],
+      "expected_evidence_characteristics": {
+        "authoritative_source_types": ["storage administration manual", "retention configuration guide"],
+        "minimum_sources": 1,
+        "required_provenance": ["source title", "source kind", "version/platform scope", "section heading", "revision date or explicit unavailable value"],
+        "must_support": ["alert threshold semantics", "read-only usage inspection", "relationship between retention and storage", "difference between quota and filesystem space"],
+        "acceptable_gaps": ["Evidence must not recommend deleting data without a separately approved action."]
+      },
+      "expected_next_questions": [
+        {"id": "nq1", "question": "Can you collect a read-only path-level usage summary and identify the largest directories?", "why": "Locates the symptom without mutating customer data.", "priority": 1},
+        {"id": "nq2", "question": "What exact metric and threshold triggered the alert, and how does it compare with the application quota value?", "why": "Distinguishes filesystem pressure from an application-quota alert.", "priority": 2}
+      ],
+      "forbidden_behaviors": ["claim the retention change caused the alert", "recommend deleting or compacting data automatically", "treat quota normal as proof filesystem usage is normal"]
+    },
+    {
+      "id": "consent-not-confirmed",
+      "track": "privacy-consent",
+      "title": "Consent is not confirmed",
+      "consent": {
+        "required": true,
+        "given_in_scenario": false,
+        "expected_if_missing": "do_not_process_or_retrieve"
+      },
+      "call": {
+        "context": "Synthetic support call where a participant asks whether live assistance is recording or analyzing the call, and no consent decision is made.",
+        "turns": [
+          {"turn": 1, "speaker": "customer", "text": "Before we continue, is this call being analyzed? I need to confirm our team's policy."},
+          {"turn": 2, "speaker": "support", "text": "We have not received confirmation from all required participants, so please pause live assistance."},
+          {"turn": 3, "speaker": "customer", "text": "Understood. We will decide after checking the policy."}
+        ]
+      },
+      "expected_incident_signals": {
+        "symptoms": [],
+        "errors": [],
+        "product_version_environment_facts": [],
+        "recent_changes": [],
+        "failed_checks": [],
+        "unanswered_diagnostic_questions": []
+      },
+      "expected_retrieval_intent": [],
+      "expected_possible_directions": [],
+      "expected_evidence_characteristics": {
+        "authoritative_source_types": [],
+        "minimum_sources": 0,
+        "required_provenance": [],
+        "must_support": [],
+        "acceptable_gaps": ["No retrieval is permitted before consent is confirmed."]
+      },
+      "expected_next_questions": [],
+      "forbidden_behaviors": ["extract incident content", "create a retrieval query", "show evidence or a next question", "retain raw call text", "log the participant's policy discussion"]
+    }
+  ]
+}
