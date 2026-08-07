@@ -63,6 +63,7 @@ Goal: make the insight stream consistently useful instead of merely functional.
 - Enforce the rule against guessed action-item owners.
 - Cap active cards and prioritize newer or unresolved information.
 - Build a small, non-sensitive evaluation corpus from synthetic meeting fixtures.
+- Add the version-controlled synthetic incident-copilot evaluation pack at `docs/evaluation/incident-copilot-mvp/`.
 - Measure time from finalized speech to visible insight.
 - Handle model refusal, context overflow, unsupported language, and generation errors.
 

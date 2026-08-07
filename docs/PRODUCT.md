@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Papagaio is a macOS app for live meeting insights. It listens to microphone and meeting audio and surfaces the information a user is likely to need while the conversation is still happening.
+Papagaio is a macOS live incident copilot for technical-support meetings. It listens to microphone and meeting audio and surfaces the technical information a support engineer is likely to need while a client troubleshooting call is still happening.
 
 The insight stream is the product. Audio capture and speech-to-text are temporary implementation stages, not user-facing features.
 
@@ -10,7 +10,7 @@ The insight stream is the product. Audio capture and speech-to-text are temporar
 
 Papagaio is for people who want to stay engaged in meetings without operating a recorder, reading a transcript, or taking continuous notes. The first release is a focused technical preview for macOS 26+ on Macs that support Apple Intelligence.
 
-It is not an enterprise recording platform, collaboration workspace, or meeting archive.
+It is not an enterprise recording platform, collaboration workspace, meeting archive, diagnostic authority, or autonomous operator.
 
 ## Core experience
 
@@ -23,8 +23,10 @@ When the user starts listening:
 1. Papagaio captures system/meeting audio and microphone audio.
 2. Apple's Speech framework converts the live audio into temporary finalized text.
 3. A bounded rolling text window is sent to Apple's on-device system language model.
-4. The model returns structured insight updates.
-5. The UI adds, updates, or removes insight cards as the meeting develops.
+4. The model returns structured incident-signal and insight updates.
+5. The UI adds, updates, or removes concise cards as the support call develops.
+
+For the incident-copilot evaluation target, the useful signal set is symptoms, errors, product/version/environment facts, recent changes, failed checks, and unanswered diagnostic questions. Papagaio may formulate intent for trusted local manuals and runbooks and offer evidence-grounded possible investigation directions and next-best questions. It does not state diagnoses as facts, infer action owners, fabricate source evidence, or execute automatic actions.
 
 The app does not display a live transcript. Temporary transcript text is discarded as it leaves the rolling context window and is discarded completely when listening stops.
 

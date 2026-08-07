@@ -1,12 +1,14 @@
 # Papagaio
 
-Papagaio is a deliberately simple macOS app that listens to a meeting and surfaces useful insights while the conversation is still happening.
+Papagaio is a deliberately simple macOS live incident copilot for technical-support meetings. It listens to a client troubleshooting call and surfaces useful, evidence-grounded directions while the conversation is still happening.
 
 ## Product promise
 
-Start listening, stay engaged in the meeting, and see the important points as they emerge.
+Start listening, stay engaged in the support call, and see meaningful technical signals and next-best questions as they emerge.
 
-Papagaio is not a transcription or note-taking app. Speech-to-text exists only as temporary input for understanding the meeting. The live transcript is not a product surface, and neither audio nor transcript text is retained after it is no longer needed for insight generation.
+Papagaio is not a transcription, note-taking, diagnosis, or autonomous-action app. Speech-to-text exists only as temporary input for understanding the call. The live transcript is not a product surface, and neither audio nor transcript text is retained after it is no longer needed for insight generation.
+
+For technical-support calls, Papagaio identifies symptoms, errors, product/version/environment facts, recent changes, failed checks, and unanswered diagnostic questions. It can formulate retrieval intent for trusted local manuals and runbooks and present evidence-grounded possible directions. It must preserve uncertainty, never invent an owner or source, and never take action on the user's behalf.
 
 ## MVP
 
