@@ -59,6 +59,31 @@ final class SpeechRecognitionAdapterTests: XCTestCase {
         XCTAssertEqual(assetsFactory.makeCount, 0)
     }
 
+    func testSupportedAssetsArePreparedBeforeRecognition() async throws {
+        let provider = RecordingSpeechAvailabilityProvider(
+            initial: SpeechRecognitionAvailability(
+                transcriberIsAvailable: true,
+                requestedLocaleIdentifier: "en-US",
+                resolvedLocaleIdentifier: "en-US",
+                installedLocale: true,
+                assetState: .supported
+            ),
+            prepared: availableSpeech(locale: "en-US")
+        )
+        let adapter = SpeechAnalyzerTranscriberAdapter(
+            localeIdentifier: "en-US",
+            availabilityProvider: provider,
+            sessionFactory: TestSpeechRecognitionSessionFactory()
+        )
+
+        try await adapter.prepare()
+
+        let prepareCount = await provider.prepareCount
+        let availability = await adapter.availability()
+        XCTAssertEqual(prepareCount, 1)
+        XCTAssertNil(availability.failure)
+    }
+
     func testSyntheticAudioSelectsCompatibleFormatAndDeliversFinalResultsOnly() async throws {
         let session = TestSpeechRecognitionSession(
             analysisFormat: MicrophoneAudioFormat(sampleRate: 16_000, channelCount: 1),
@@ -260,6 +285,34 @@ private struct FixedSpeechAvailabilityProvider: SpeechAvailabilityProviding, Sen
 
     func inspect(localeIdentifier: String) async -> SpeechRecognitionAvailability {
         value
+    }
+
+    func prepare(localeIdentifier: String) async -> SpeechRecognitionAvailability {
+        value
+    }
+}
+
+private actor RecordingSpeechAvailabilityProvider: SpeechAvailabilityProviding {
+    private var current: SpeechRecognitionAvailability
+    private let prepared: SpeechRecognitionAvailability
+    private(set) var prepareCount = 0
+
+    init(
+        initial: SpeechRecognitionAvailability,
+        prepared: SpeechRecognitionAvailability
+    ) {
+        current = initial
+        self.prepared = prepared
+    }
+
+    func inspect(localeIdentifier: String) async -> SpeechRecognitionAvailability {
+        current
+    }
+
+    func prepare(localeIdentifier: String) async -> SpeechRecognitionAvailability {
+        prepareCount += 1
+        current = prepared
+        return prepared
     }
 }
 

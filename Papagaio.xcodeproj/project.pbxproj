@@ -39,6 +39,7 @@
 		A1000001000000000000001F /* CompositionRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018 /* CompositionRoot.swift */; };
 		A10000010000000000000020 /* CompositionRoot.swift in Tests */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018 /* CompositionRoot.swift */; };
 		A10000010000000000000021 /* VerticalSliceIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019 /* VerticalSliceIntegrationTests.swift */; };
+		A10000010000000000000022 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000001A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +68,7 @@
 		A20000010000000000000017 /* SessionLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLifecycleTests.swift; sourceTree = "<group>"; };
 		A20000010000000000000018 /* CompositionRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionRoot.swift; sourceTree = "<group>"; };
 		A20000010000000000000019 /* VerticalSliceIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerticalSliceIntegrationTests.swift; sourceTree = "<group>"; };
+		A2000001000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +122,7 @@
 				A20000010000000000000013 /* SpeechRecognitionAdapter.swift */,
 				A20000010000000000000016 /* SessionOrchestration.swift */,
 				A20000010000000000000018 /* CompositionRoot.swift */,
+				A2000001000000000000001A /* Assets.xcassets */,
 			);
 			path = Papagaio;
 			sourceTree = "<group>";
@@ -227,6 +230,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000010000000000000022 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,6 +318,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Papagaio/Papagaio.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Papagaio/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -331,6 +336,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Papagaio/Papagaio.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Papagaio/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;

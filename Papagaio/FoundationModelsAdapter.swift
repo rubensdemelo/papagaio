@@ -310,6 +310,10 @@ actor FoundationModelsInsightGenerator: SessionInsightGenerator {
         await runtime.availability()
     }
 
+    func supportsLocale(identifier: String) async -> Bool {
+        await runtime.supportsLocale(identifier: identifier)
+    }
+
     func startSession(localeIdentifier: String) async throws(PipelineFailure) {
         guard session == nil else {
             throw .stage(.insightGeneration, .invalidState)

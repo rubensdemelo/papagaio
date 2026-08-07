@@ -44,7 +44,7 @@ Papagaio must not guess an action-item owner. It may include an owner only when 
 
 The MVP uses the Foundation Models framework to access the on-device system language model that powers Apple Intelligence. Insight responses use guided generation to produce typed Swift values rather than free-form text that the app must parse.
 
-Before listening begins, Papagaio checks whether the system language model is available and whether the meeting language is supported. Apple Intelligence may be unavailable because the Mac is ineligible, the feature is disabled, required assets are not ready, or the locale is unsupported. The MVP explains the condition and does not offer a cloud-model fallback.
+When the app loads and before listening begins, Papagaio checks microphone access, speech recognition and its required assets, Apple Intelligence, and locale support. It shows all unavailable prerequisites together with the macOS action needed to resolve each one, so the user can fix the setup before trying again. Apple Intelligence may be unavailable because the Mac is ineligible, the feature is disabled, required assets are not ready, the Mac and Siri languages do not match, organization policy restricts access, or the locale is unsupported. The MVP explains the condition and does not offer a cloud-model fallback.
 
 Speech recognition is a separate native stage. SpeechAnalyzer and SpeechTranscriber perform on-device speech-to-text suitable for meetings; Foundation Models then interprets that temporary text.
 

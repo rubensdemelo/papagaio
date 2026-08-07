@@ -84,6 +84,34 @@ enum UnavailableReason: Sendable, Equatable {
     case languageModelLocaleUnsupported(identifier: String)
 }
 
+enum PrerequisiteKind: Sendable, Equatable, CaseIterable {
+    case microphone
+    case speechRecognition
+    case appleIntelligence
+}
+
+struct PrerequisiteCheck: Sendable, Equatable, Identifiable {
+    let kind: PrerequisiteKind
+    let reason: UnavailableReason?
+
+    var id: PrerequisiteKind { kind }
+    var isReady: Bool { reason == nil }
+}
+
+struct SessionReadiness: Sendable, Equatable {
+    let checks: [PrerequisiteCheck]
+
+    var isReady: Bool {
+        checks.allSatisfy(\.isReady)
+    }
+
+    var blockingReason: UnavailableReason? {
+        checks
+            .compactMap(\.reason)
+            .first { $0 != .microphonePermissionUndetermined }
+    }
+}
+
 enum PipelineStage: Sendable, Equatable {
     case audioCapture
     case speechRecognition

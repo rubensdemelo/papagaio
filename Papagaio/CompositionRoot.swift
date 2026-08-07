@@ -6,6 +6,7 @@ import Observation
 final class LiveSessionController: SessionShellControlling {
     @Published private(set) var status: SessionStatus = .stopped
     @Published private(set) var cards: [InsightCard] = []
+    @Published private(set) var readiness: SessionReadiness?
     @Published private(set) var unavailableReason: UnavailableReason?
     @Published private(set) var failure: PipelineFailure?
     @Published private(set) var isPerformingPrimaryAction = false
@@ -34,6 +35,11 @@ final class LiveSessionController: SessionShellControlling {
         case .stopped, .interrupted, .unavailable:
             "Start Listening"
         }
+    }
+
+    func checkReadiness() async {
+        _ = await lifecycle.checkReadiness()
+        refreshSnapshot()
     }
 
     func performPrimaryAction() async {
@@ -87,6 +93,7 @@ final class LiveSessionController: SessionShellControlling {
 
     private func refreshSnapshot() {
         status = lifecycle.status
+        readiness = lifecycle.readiness
         failure = lifecycle.failure
         if case let .unavailable(reason)? = failure {
             unavailableReason = reason

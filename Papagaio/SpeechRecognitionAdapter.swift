@@ -50,6 +50,7 @@ struct SpeechRecognitionAvailability: Sendable, Equatable {
 
 protocol SpeechAvailabilityProviding: Sendable {
     func inspect(localeIdentifier: String) async -> SpeechRecognitionAvailability
+    func prepare(localeIdentifier: String) async -> SpeechRecognitionAvailability
 }
 
 struct SystemSpeechAvailabilityProvider: SpeechAvailabilityProviding, Sendable {
@@ -94,6 +95,31 @@ struct SystemSpeechAvailabilityProvider: SpeechAvailabilityProviding, Sendable {
             installedLocale: installedLocale,
             assetState: SpeechAssetState(assetStatus)
         )
+    }
+
+    func prepare(localeIdentifier: String) async -> SpeechRecognitionAvailability {
+        let current = await inspect(localeIdentifier: localeIdentifier)
+        guard case .unavailable(.speechAssetsNotReady) = current.failure,
+              let resolvedLocaleIdentifier = current.resolvedLocaleIdentifier else {
+            return current
+        }
+
+        let transcriber = SpeechTranscriber(
+            locale: Locale(identifier: resolvedLocaleIdentifier),
+            preset: .transcription
+        )
+
+        do {
+            let request = try await AssetInventory.assetInstallationRequest(
+                supporting: [transcriber]
+            )
+            try await request?.downloadAndInstall()
+        } catch {
+            // Re-inspection preserves the typed unavailable state while allowing
+            // the system to continue a deferred download in the background.
+        }
+
+        return await inspect(localeIdentifier: localeIdentifier)
     }
 }
 
@@ -284,6 +310,15 @@ actor SpeechAnalyzerTranscriberAdapter: SessionSpeechRecognizer {
 
     func availability() async -> SpeechRecognitionAvailability {
         await availabilityProvider.inspect(localeIdentifier: localeIdentifier)
+    }
+
+    func prepare() async throws(PipelineFailure) {
+        let availability = await availabilityProvider.prepare(
+            localeIdentifier: localeIdentifier
+        )
+        if let failure = availability.failure {
+            throw failure
+        }
     }
 
     func recognize(audio: AudioStream) async throws(PipelineFailure) -> FinalizedSpeechStream {

@@ -250,6 +250,7 @@ final class DeterministicInsightState: InsightState {
 @MainActor
 final class DeterministicSessionLifecycle: SessionLifecycle {
     private(set) var status: SessionStatus = .stopped
+    private(set) var readiness: SessionReadiness?
     private(set) var startCount = 0
     private(set) var stopCount = 0
     private(set) var cancelCount = 0
@@ -267,6 +268,25 @@ final class DeterministicSessionLifecycle: SessionLifecycle {
 
     func checkAvailability() async -> Availability {
         configuredAvailability
+    }
+
+    func checkReadiness() async -> SessionReadiness {
+        let reason: UnavailableReason?
+        switch configuredAvailability {
+        case .available:
+            reason = nil
+        case .unavailable(let configuredReason):
+            reason = configuredReason
+        }
+        let report = SessionReadiness(
+            checks: [
+                PrerequisiteCheck(kind: .microphone, reason: reason),
+                PrerequisiteCheck(kind: .speechRecognition, reason: reason),
+                PrerequisiteCheck(kind: .appleIntelligence, reason: reason),
+            ]
+        )
+        readiness = report
+        return report
     }
 
     func start() async throws(PipelineFailure) {

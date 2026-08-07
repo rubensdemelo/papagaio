@@ -12,11 +12,13 @@ enum FakeSessionStartOutcome: Sendable, Equatable {
 protocol SessionShellControlling: ObservableObject {
     var status: SessionStatus { get }
     var cards: [InsightCard] { get }
+    var readiness: SessionReadiness? { get }
     var unavailableReason: UnavailableReason? { get }
     var failure: PipelineFailure? { get }
     var isPerformingPrimaryAction: Bool { get }
     var primaryActionTitle: String { get }
 
+    func checkReadiness() async
     func performPrimaryAction() async
 }
 
@@ -24,6 +26,7 @@ protocol SessionShellControlling: ObservableObject {
 final class FakeSessionController: SessionShellControlling {
     @Published private(set) var status: SessionStatus
     @Published private(set) var cards: [InsightCard]
+    @Published private(set) var readiness: SessionReadiness?
     @Published private(set) var unavailableReason: UnavailableReason?
     @Published private(set) var failure: PipelineFailure?
     @Published private(set) var isPerformingPrimaryAction = false
@@ -37,6 +40,7 @@ final class FakeSessionController: SessionShellControlling {
     init(
         status: SessionStatus = .stopped,
         cards: [InsightCard] = [],
+        readiness: SessionReadiness? = nil,
         unavailableReason: UnavailableReason? = nil,
         failure: PipelineFailure? = nil,
         startOutcome: FakeSessionStartOutcome = .listening,
@@ -44,6 +48,7 @@ final class FakeSessionController: SessionShellControlling {
     ) {
         self.status = status
         self.cards = cards
+        self.readiness = readiness
         self.unavailableReason = unavailableReason
         self.failure = failure
         self.startOutcome = startOutcome
@@ -59,6 +64,10 @@ final class FakeSessionController: SessionShellControlling {
         case .stopped, .interrupted, .unavailable:
             "Start Listening"
         }
+    }
+
+    func checkReadiness() async {
+        // The fake controller receives readiness through its initializer or inject().
     }
 
     func performPrimaryAction() async {
@@ -77,11 +86,13 @@ final class FakeSessionController: SessionShellControlling {
     func inject(
         status: SessionStatus,
         cards: [InsightCard] = [],
+        readiness: SessionReadiness? = nil,
         unavailableReason: UnavailableReason? = nil,
         failure: PipelineFailure? = nil
     ) {
         self.status = status
         self.cards = cards
+        self.readiness = readiness
         self.unavailableReason = unavailableReason
         self.failure = failure
     }
@@ -166,6 +177,9 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         }
         .frame(minWidth: 480, idealWidth: 560, minHeight: 460, idealHeight: 620)
         .background(Color(nsColor: .windowBackgroundColor))
+        .task {
+            await controller.checkReadiness()
+        }
     }
 
     private var header: some View {
@@ -214,16 +228,23 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
     @ViewBuilder
     private var content: some View {
         if controller.cards.isEmpty {
-            SessionEmptyView(
-                presentation: EmptyStatePresentation(
-                    status: controller.status,
-                    statusDetail: SessionStatusPresentation(
+            VStack(spacing: 18) {
+                SessionEmptyView(
+                    presentation: EmptyStatePresentation(
                         status: controller.status,
-                        unavailableReason: controller.unavailableReason,
-                        failure: controller.failure
-                    ).detail
+                        statusDetail: SessionStatusPresentation(
+                            status: controller.status,
+                            unavailableReason: controller.unavailableReason,
+                            failure: controller.failure
+                        ).detail
+                    )
                 )
-            )
+
+                if let readiness = controller.readiness, !readiness.isReady {
+                    PrerequisiteChecklistView(report: readiness)
+                        .padding(.horizontal, 24)
+                }
+            }
         } else {
             ScrollView {
                 LazyVStack(spacing: 12) {
@@ -289,6 +310,77 @@ private struct SessionEmptyView: View {
             Text(presentation.detail)
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct PrerequisiteChecklistView: View {
+    let report: SessionReadiness
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Before listening")
+                .font(.headline)
+
+            ForEach(report.checks) { check in
+                let presentation = PrerequisiteCheckPresentation(check: check)
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: presentation.symbolName)
+                        .foregroundStyle(presentation.tint)
+                        .frame(width: 18)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(presentation.title)
+                            .font(.subheadline.weight(.semibold))
+                        Text(presentation.detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .frame(maxWidth: 460, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Listening prerequisites")
+    }
+}
+
+struct PrerequisiteCheckPresentation: Equatable {
+    let title: String
+    let detail: String
+    let symbolName: String
+    let tintName: SessionStatusPresentation.TintName
+
+    init(check: PrerequisiteCheck) {
+        title = check.kind.title
+        if let reason = check.reason {
+            detail = reason.guidanceMessage
+            symbolName = "exclamationmark.circle.fill"
+            tintName = .unavailable
+        } else {
+            detail = "Ready."
+            symbolName = "checkmark.circle.fill"
+            tintName = .active
+        }
+    }
+
+    var tint: Color {
+        switch tintName {
+        case .neutral:
+            .secondary
+        case .active:
+            .accentColor
+        case .warning:
+            .orange
+        case .unavailable:
+            .red
+        }
     }
 }
 
@@ -381,7 +473,7 @@ struct SessionStatusPresentation: Equatable {
             tintName = .warning
         case .unavailable:
             title = "Unavailable"
-            detail = unavailableReason?.displayMessage ?? failure?.displayMessage
+            detail = unavailableReason?.guidanceMessage ?? failure?.guidanceMessage
                 ?? "Papagaio could not start listening."
             symbolName = "xmark.circle"
             tintName = .unavailable
@@ -437,38 +529,51 @@ struct EmptyStatePresentation: Equatable {
     }
 }
 
+private extension PrerequisiteKind {
+    var title: String {
+        switch self {
+        case .microphone:
+            "Microphone access"
+        case .speechRecognition:
+            "Speech recognition"
+        case .appleIntelligence:
+            "Apple Intelligence"
+        }
+    }
+}
+
 private extension UnavailableReason {
-    var displayMessage: String {
+    var guidanceMessage: String {
         switch self {
         case .microphonePermissionUndetermined:
-            "Microphone permission has not been requested yet."
+            "Click Start Listening and allow microphone access when macOS asks."
         case .microphonePermissionDenied:
-            "Microphone access is required to listen."
+            "Open System Settings → Privacy & Security → Microphone and enable Papagaio."
         case .audioInputUnavailable:
-            "No audio input is available."
+            "Connect or enable a microphone, then try again."
         case .speechRecognitionUnavailable:
-            "On-device speech recognition is unavailable."
+            "This Mac cannot use on-device speech recognition. Use a supported macOS 26+ Mac."
         case .speechLocaleUnsupported(let identifier):
-            "Speech recognition does not support \(identifier)."
+            "Speech recognition does not support \(identifier). Papagaio currently requires English (US)."
         case .speechAssetsNotReady:
-            "Required speech assets are not ready."
+            "Keep this Mac online. Papagaio will download the required speech assets, then try again."
         case .languageModelDeviceNotEligible:
-            "This Mac does not support the on-device language model."
+            "This Mac does not support Apple Intelligence. Use a compatible Mac."
         case .appleIntelligenceDisabled:
-            "Apple Intelligence is turned off."
+            "Open System Settings → Apple Intelligence & Siri. Set macOS and Siri to the same language (Papagaio requires English (US)) and turn on Apple Intelligence. If macOS says your organization restricts access, contact your IT administrator."
         case .languageModelNotReady:
-            "The on-device language model is not ready."
+            "Keep Apple Intelligence enabled and this Mac online while the model finishes preparing."
         case .languageModelLocaleUnsupported(let identifier):
-            "The on-device language model does not support \(identifier)."
+            "The on-device language model does not support \(identifier). Papagaio currently requires English (US)."
         }
     }
 }
 
 private extension PipelineFailure {
-    var displayMessage: String {
+    var guidanceMessage: String {
         switch self {
         case .unavailable(let reason):
-            reason.displayMessage
+            reason.guidanceMessage
         case .stage(_, .interrupted):
             "Listening was interrupted."
         case .stage(_, .overloaded):

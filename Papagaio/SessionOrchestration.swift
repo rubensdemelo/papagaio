@@ -7,10 +7,12 @@ protocol SessionAudioCapture: AudioCapture {
 
 protocol SessionSpeechRecognizer: TemporarySpeechRecognizer {
     func availability() async -> SpeechRecognitionAvailability
+    func prepare() async throws(PipelineFailure)
 }
 
 protocol SessionInsightGenerator: InsightGenerator {
     func availability() async -> Availability
+    func supportsLocale(identifier: String) async -> Bool
     func startSession(localeIdentifier: String) async throws(PipelineFailure)
     func stop() async
 }
@@ -60,6 +62,7 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
 
     private(set) var status: SessionStatus = .stopped
     private(set) var failure: PipelineFailure?
+    private(set) var readiness: SessionReadiness?
 
     private var nextSessionID: UInt64 = 0
     private var activeSessionID: UInt64?
@@ -85,26 +88,75 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
     }
 
     func checkAvailability() async -> Availability {
+        let report = await checkReadiness()
+        guard let reason = report.blockingReason
+            ?? report.checks.compactMap(\.reason).first else {
+            return .available
+        }
+        return .unavailable(reason)
+    }
+
+    func checkReadiness() async -> SessionReadiness {
         let permission = await capture.permission()
-        if permission == .denied {
-            return .unavailable(.microphonePermissionDenied)
-        }
-        if permission == .undetermined {
-            return .unavailable(.microphonePermissionUndetermined)
-        }
-
         let captureAvailability = await capture.checkAvailability()
-        if case .unavailable(let reason) = captureAvailability,
-           !(permission == .undetermined && reason == .microphonePermissionUndetermined) {
-            return .unavailable(reason)
+
+        let microphoneReason: UnavailableReason? = {
+            if permission == .denied {
+                return .microphonePermissionDenied
+            }
+            if case .unavailable(let reason) = captureAvailability {
+                return reason
+            }
+            if permission == .undetermined {
+                return .microphonePermissionUndetermined
+            }
+            return nil
+        }()
+
+        let speechPreparationFailure: PipelineFailure?
+        do {
+            try await speechRecognizer.prepare()
+            speechPreparationFailure = nil
+        } catch let failure {
+            speechPreparationFailure = failure
+        }
+        let speechReason = await speechRecognizer.availability().failure
+            .flatMap { failure in
+                if case .unavailable(let reason) = failure {
+                    return reason
+                }
+                return nil
+            }
+            ?? speechPreparationFailure.flatMap { failure in
+                if case .unavailable(let reason) = failure {
+                    return reason
+                }
+                return .speechRecognitionUnavailable
+            }
+
+        let modelAvailability = await insightGenerator.availability()
+        let modelReason: UnavailableReason?
+        switch modelAvailability {
+        case .available:
+            let supportsLocale = await insightGenerator.supportsLocale(
+                identifier: localeIdentifier
+            )
+            modelReason = supportsLocale
+                ? nil
+                : .languageModelLocaleUnsupported(identifier: localeIdentifier)
+        case .unavailable(let reason):
+            modelReason = reason
         }
 
-        let speechAvailability = await speechRecognizer.availability()
-        if let failure = speechAvailability.failure {
-            return availability(for: failure)
-        }
-
-        return await insightGenerator.availability()
+        let report = SessionReadiness(
+            checks: [
+                PrerequisiteCheck(kind: .microphone, reason: microphoneReason),
+                PrerequisiteCheck(kind: .speechRecognition, reason: speechReason),
+                PrerequisiteCheck(kind: .appleIntelligence, reason: modelReason),
+            ]
+        )
+        readiness = report
+        return report
     }
 
     func start() async throws(PipelineFailure) {
@@ -141,6 +193,11 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
             generationTask = Task { [weak self] in
                 await self?.generateBatches(sessionID: sessionID)
             }
+            readiness = SessionReadiness(
+                checks: readiness?.checks.map {
+                    PrerequisiteCheck(kind: $0.kind, reason: nil)
+                } ?? []
+            )
             status = .listening
         } catch {
             let failure = error
@@ -168,25 +225,9 @@ final class SessionLifecycleCoordinator: SessionLifecycle {
     }
 
     private func preflight() async throws(PipelineFailure) {
-        let permission = await capture.permission()
-        guard permission != .denied else {
-            throw .unavailable(.microphonePermissionDenied)
-        }
-
-        let captureAvailability = await capture.checkAvailability()
-        if case .unavailable(let reason) = captureAvailability,
-           !(permission == .undetermined && reason == .microphonePermissionUndetermined) {
+        let report = await checkReadiness()
+        if let reason = report.blockingReason {
             throw .unavailable(reason)
-        }
-
-        let speechAvailability = await speechRecognizer.availability()
-        if let failure = speechAvailability.failure {
-            throw failure
-        }
-
-        let modelAvailability = await insightGenerator.availability()
-        guard modelAvailability == .available else {
-            throw availabilityFailure(for: modelAvailability)
         }
     }
 

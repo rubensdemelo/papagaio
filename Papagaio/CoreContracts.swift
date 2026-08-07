@@ -711,7 +711,9 @@ final class InMemoryInsightStore: InsightState {
 @MainActor
 protocol SessionLifecycle: AnyObject {
     var status: SessionStatus { get }
+    var readiness: SessionReadiness? { get }
     func checkAvailability() async -> Availability
+    func checkReadiness() async -> SessionReadiness
     func start() async throws(PipelineFailure)
     func stop() async
     func cancel() async

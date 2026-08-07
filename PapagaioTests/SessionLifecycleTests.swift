@@ -128,6 +128,41 @@ final class SessionLifecycleTests: XCTestCase {
         XCTAssertEqual(generatorStarts, 0)
     }
 
+    func testReadinessReportsAllUnavailablePrerequisitesTogether() async {
+        let capture = TestSessionAudioCapture(
+            permission: .denied,
+            availability: .unavailable(.microphonePermissionDenied)
+        )
+        let speech = TestSessionSpeechRecognizer(
+            availability: SpeechRecognitionAvailability(
+                transcriberIsAvailable: false,
+                requestedLocaleIdentifier: "en-US",
+                resolvedLocaleIdentifier: nil,
+                installedLocale: false,
+                assetState: .unsupported
+            )
+        )
+        let generator = TestSessionInsightGenerator(
+            availability: .unavailable(.appleIntelligenceDisabled)
+        )
+        let coordinator = makeCoordinator(
+            capture: capture,
+            speech: speech,
+            generator: generator
+        )
+
+        let report = await coordinator.checkReadiness()
+
+        XCTAssertEqual(
+            report.checks.map(\.kind),
+            [.microphone, .speechRecognition, .appleIntelligence]
+        )
+        XCTAssertEqual(report.checks[0].reason, .microphonePermissionDenied)
+        XCTAssertEqual(report.checks[1].reason, .speechRecognitionUnavailable)
+        XCTAssertEqual(report.checks[2].reason, .appleIntelligenceDisabled)
+        XCTAssertFalse(report.isReady)
+    }
+
     func testCaptureStartFailureCleansPartialStartup() async throws {
         let capture = TestSessionAudioCapture(
             startFailure: .stage(.audioCapture, .failed)
@@ -582,6 +617,16 @@ actor TestSessionSpeechRecognizer: SessionSpeechRecognizer {
         configuredAvailability
     }
 
+    func supportsLocale(identifier: String) async -> Bool {
+        true
+    }
+
+    func prepare() async throws(PipelineFailure) {
+        if let failure = configuredAvailability.failure {
+            throw failure
+        }
+    }
+
     func recognize(audio: AudioStream) async throws(PipelineFailure) -> FinalizedSpeechStream {
         if let recognizeFailure {
             throw recognizeFailure
@@ -725,6 +770,10 @@ actor TestSessionInsightGenerator: SessionInsightGenerator {
 
     func availability() async -> Availability {
         configuredAvailability
+    }
+
+    func supportsLocale(identifier: String) async -> Bool {
+        true
     }
 
     func startSession(localeIdentifier: String) async throws(PipelineFailure) {

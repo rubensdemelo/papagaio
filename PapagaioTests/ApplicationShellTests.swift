@@ -122,7 +122,22 @@ final class ApplicationShellTests: XCTestCase {
         )
         XCTAssertEqual(
             EmptyStatePresentation(status: .unavailable, statusDetail: unavailable.detail).detail,
-            "The on-device language model is not ready."
+            "Keep Apple Intelligence enabled and this Mac online while the model finishes preparing."
         )
+    }
+
+    func testPrerequisitePresentationExplainsLanguageAndOrganizationBlockers() {
+        let presentation = PrerequisiteCheckPresentation(
+            check: PrerequisiteCheck(
+                kind: .appleIntelligence,
+                reason: .appleIntelligenceDisabled
+            )
+        )
+
+        XCTAssertEqual(presentation.title, "Apple Intelligence")
+        XCTAssertTrue(presentation.detail.contains("System Settings"))
+        XCTAssertTrue(presentation.detail.contains("same language"))
+        XCTAssertTrue(presentation.detail.contains("organization"))
+        XCTAssertEqual(presentation.symbolName, "exclamationmark.circle.fill")
     }
 }
