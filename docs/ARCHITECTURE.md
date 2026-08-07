@@ -102,6 +102,10 @@ InsightUpdate
 
 The app validates semantic constraints after generation, including nonempty text, known categories, bounded card counts, and the rule against guessed owners.
 
+### Local resource access
+
+The local resource-folder setting is independent of the listening pipeline. `LocalResourceFolderController` owns a single optional folder selection and uses `NSOpenPanel` for user-authorized selection. It stores only a read-only security-scoped bookmark in the app container, resolves and refreshes that bookmark on launch, and checks location existence, directory type, and readability without enumerating or opening child files. Losing access produces an explicit UI error and a re-selection path. No ingestion, retrieval, indexing, upload, or model call is part of this seam.
+
 ### Insight state
 
 An in-memory insight store applies generated updates on the main actor. Stable keys allow the model to update or resolve an existing card instead of creating duplicates.
