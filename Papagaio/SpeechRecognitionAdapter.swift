@@ -286,7 +286,7 @@ final class SystemSpeechRecognitionSession: SpeechRecognitionSession, @unchecked
     func bestAvailableAudioFormat(
         considering naturalFormat: MicrophoneAudioFormat
     ) async -> MicrophoneAudioFormat? {
-        guard let naturalFormat = makeAVAudioFormat(naturalFormat) else {
+        guard let naturalFormat = makeSourceAVAudioFormat(naturalFormat) else {
             return nil
         }
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(
@@ -302,7 +302,7 @@ final class SystemSpeechRecognitionSession: SpeechRecognitionSession, @unchecked
     }
 
     func prepare(toAnalyze format: MicrophoneAudioFormat) async throws(PipelineFailure) {
-        guard let audioFormat = makeAVAudioFormat(format) else {
+        guard let audioFormat = makeAnalysisAVAudioFormat(format) else {
             throw .stage(.speechRecognition, .invalidState)
         }
 
@@ -569,12 +569,25 @@ private actor SessionTeardownGate {
     }
 }
 
-private func makeAVAudioFormat(_ format: MicrophoneAudioFormat) -> AVAudioFormat? {
+private func makeSourceAVAudioFormat(_ format: MicrophoneAudioFormat) -> AVAudioFormat? {
     guard format.sampleRate > 0, format.channelCount > 0 else {
         return nil
     }
     return AVAudioFormat(
         commonFormat: .pcmFormatFloat32,
+        sampleRate: format.sampleRate,
+        channels: AVAudioChannelCount(format.channelCount),
+        interleaved: false
+    )
+}
+
+private func makeAnalysisAVAudioFormat(_ format: MicrophoneAudioFormat) -> AVAudioFormat? {
+    guard format.sampleRate > 0, format.channelCount > 0 else {
+        return nil
+    }
+    // SpeechAnalyzer's macOS live-input worker requires signed 16-bit PCM.
+    return AVAudioFormat(
+        commonFormat: .pcmFormatInt16,
         sampleRate: format.sampleRate,
         channels: AVAudioChannelCount(format.channelCount),
         interleaved: false
@@ -599,8 +612,8 @@ final class SpeechAudioBufferConverter: @unchecked Sendable {
         sourceFormat: MicrophoneAudioFormat,
         analysisFormat: MicrophoneAudioFormat
     ) throws(PipelineFailure) {
-        guard let sourceAVFormat = makeAVAudioFormat(sourceFormat),
-              let analysisAVFormat = makeAVAudioFormat(analysisFormat) else {
+        guard let sourceAVFormat = makeSourceAVAudioFormat(sourceFormat),
+              let analysisAVFormat = makeAnalysisAVAudioFormat(analysisFormat) else {
             throw .stage(.speechRecognition, .invalidState)
         }
 
@@ -639,8 +652,8 @@ private func makePCMBuffer(
     for input: SpeechAudioInput,
     using converter: AVAudioConverter?
 ) throws(PipelineFailure) -> AVAudioPCMBuffer {
-    guard let sourceFormat = makeAVAudioFormat(input.sourceFormat),
-          let targetFormat = makeAVAudioFormat(input.analysisFormat) else {
+    guard let sourceFormat = makeSourceAVAudioFormat(input.sourceFormat),
+          let targetFormat = makeAnalysisAVAudioFormat(input.analysisFormat) else {
         throw .stage(.speechRecognition, .invalidState)
     }
 

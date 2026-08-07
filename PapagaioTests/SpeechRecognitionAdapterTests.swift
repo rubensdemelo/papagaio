@@ -48,6 +48,8 @@ final class SpeechRecognitionAdapterTests: XCTestCase {
 
         XCTAssertEqual(first.format.sampleRate, 16_000)
         XCTAssertEqual(second.format.sampleRate, 16_000)
+        XCTAssertEqual(first.format.commonFormat, .pcmFormatInt16)
+        XCTAssertEqual(second.format.commonFormat, .pcmFormatInt16)
         XCTAssertGreaterThan(first.frameLength, 0)
         XCTAssertGreaterThan(second.frameLength, 0)
     }
