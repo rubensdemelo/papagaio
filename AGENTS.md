@@ -120,3 +120,10 @@ Hardware-dependent capture and one-hour soak tests must be identified clearly wh
 - Preserve the simple product boundary when proposing abstractions or future-proofing.
 - Add comments for non-obvious constraints and decisions, not line-by-line narration.
 - Keep user-facing language concise and avoid calling the temporary speech-to-text pipeline a product feature.
+
+## Git workflow
+
+- Work directly on `main` by default.
+- Create a separate branch only when the user explicitly requests one.
+- After an implementation is verified, commit the focused changes and push them to the current branch without asking for separate confirmation for each step.
+- Keep branch creation, pull requests, and merging opt-in; perform them only when the user explicitly requests them.
