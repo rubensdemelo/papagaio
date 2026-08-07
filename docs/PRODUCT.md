@@ -48,6 +48,8 @@ Before listening begins, Papagaio checks whether the system language model is av
 
 Speech recognition is a separate native stage. SpeechAnalyzer and SpeechTranscriber perform on-device speech-to-text suitable for meetings; Foundation Models then interprets that temporary text.
 
+The current M1 implementation uses English (US) (`en-US`) for both speech recognition and meeting understanding regardless of the Mac's system locale. Locale selection is not yet a user-facing control.
+
 ## Data lifecycle
 
 - Audio remains in memory only long enough to feed speech recognition.

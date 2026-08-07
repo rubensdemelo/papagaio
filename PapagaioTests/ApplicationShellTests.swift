@@ -2,6 +2,10 @@ import XCTest
 
 @MainActor
 final class ApplicationShellTests: XCTestCase {
+    func testLiveCompositionUsesFixedEnglishUSLocale() {
+        XCTAssertEqual(PapagaioCompositionRoot.defaultLocaleIdentifier, "en-US")
+    }
+
     func testPrimaryActionStartsAndStopsExactlyOnce() async {
         let card = InsightCard(
             stableKey: "synthetic-card",

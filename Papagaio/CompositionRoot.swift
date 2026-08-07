@@ -118,10 +118,10 @@ final class LiveSessionController: SessionShellControlling {
 
 @MainActor
 enum PapagaioCompositionRoot {
+    static let defaultLocaleIdentifier = "en-US"
+
     static func makeLiveController() -> LiveSessionController {
-        let localeIdentifier = Locale.current.identifier.isEmpty
-            ? "en-US"
-            : Locale.current.identifier
+        let localeIdentifier = defaultLocaleIdentifier
         let capture = AVAudioEngineMicrophoneCapture()
         let speechRecognizer = SpeechAnalyzerTranscriberAdapter(
             localeIdentifier: localeIdentifier

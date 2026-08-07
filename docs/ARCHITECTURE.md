@@ -52,6 +52,8 @@ At startup, check:
 - Support for the selected meeting locale.
 - Installation state of required speech assets.
 
+The current M1 composition root supplies `en-US` as the fixed meeting locale regardless of the Mac's system locale. A user-selectable locale remains outside the current interface.
+
 The app should guide the user when assets are downloadable and stop cleanly when the language or device is unsupported.
 
 ### Rolling meeting context

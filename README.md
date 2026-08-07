@@ -57,7 +57,7 @@ The first release targets:
 - macOS 26 or later.
 - A Mac that supports Apple Intelligence.
 - Apple Intelligence enabled and ready on the device.
-- A meeting language supported by both SpeechTranscriber and the system language model.
+- English (US) speech and language-model support; the current M1 composition root uses `en-US` regardless of the Mac's system locale.
 - Microphone and screen-capture permissions.
 
 Papagaio checks these capabilities at runtime and explains unavailable states. The MVP does not use a cloud-model fallback.
