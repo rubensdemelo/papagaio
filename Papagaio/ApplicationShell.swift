@@ -299,23 +299,28 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
     @ViewBuilder
     private var content: some View {
         if controller.cards.isEmpty {
-            VStack(spacing: 18) {
-                SessionEmptyView(
-                    presentation: EmptyStatePresentation(
-                        status: controller.status,
-                        statusDetail: SessionStatusPresentation(
+            ScrollView {
+                VStack(spacing: 18) {
+                    SessionEmptyView(
+                        presentation: EmptyStatePresentation(
                             status: controller.status,
-                            unavailableReason: controller.unavailableReason,
-                            failure: controller.failure
-                        ).detail
+                            statusDetail: SessionStatusPresentation(
+                                status: controller.status,
+                                unavailableReason: controller.unavailableReason,
+                                failure: controller.failure
+                            ).detail
+                        )
                     )
-                )
 
-                if let readiness = controller.readiness, !readiness.isReady {
-                    PrerequisiteChecklistView(report: readiness)
-                        .padding(.horizontal, 24)
+                    if let readiness = controller.readiness, !readiness.isReady {
+                        PrerequisiteChecklistView(report: readiness)
+                            .padding(.horizontal, 24)
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
             }
+            .accessibilityLabel("Listening readiness")
         } else {
             ScrollView {
                 LazyVStack(spacing: 12) {
