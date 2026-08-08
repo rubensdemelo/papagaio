@@ -62,9 +62,10 @@ final class MicrophoneCaptureTests: XCTestCase {
             format: MicrophoneAudioFormat(sampleRate: 48_000, channelCount: 1)
         )
         let diagnostics = MicrophoneCaptureDiagnostics()
+        let permission = TestMicrophonePermissionProvider(permission: .granted)
         let capture = AVAudioEngineMicrophoneCapture(
             engine: engine,
-            permissionProvider: TestMicrophonePermissionProvider(permission: .granted),
+            permissionProvider: permission,
             queueCapacity: 4,
             diagnostics: diagnostics
         )
@@ -97,6 +98,11 @@ final class MicrophoneCaptureTests: XCTestCase {
         let diagnosticsSnapshot = await capture.diagnostics()
         XCTAssertEqual(stoppedFormat, nil)
         XCTAssertEqual(diagnosticsSnapshot.acceptedBufferCount, 2)
+        XCTAssertEqual(
+            permission.requestCount,
+            0,
+            "Granted microphone access must not trigger another authorization request."
+        )
     }
 
     func testStartAndStopAreIdempotentAndRestartCreatesNewCapture() async throws {

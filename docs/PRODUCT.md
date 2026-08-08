@@ -52,6 +52,8 @@ The MVP uses the Foundation Models framework to access the on-device system lang
 
 When the app loads and before listening begins, Papagaio checks microphone access, speech recognition and its required assets, Apple Intelligence, and locale support. It shows all unavailable prerequisites together with the macOS action needed to resolve each one, so the user can fix the setup before trying again. Apple Intelligence may be unavailable because the Mac is ineligible, the feature is disabled, required assets are not ready, the Mac and Siri languages do not match, organization policy restricts access, or the locale is unsupported. The MVP explains the condition and does not offer a cloud-model fallback.
 
+When Foundation Models reports that Apple Intelligence is disabled, Papagaio shows a one-time, non-blocking notice explaining that enabling it downloads on-device models and requires several gigabytes of free disk space. Unsupported devices and models that are still downloading use their existing unavailable-state guidance instead.
+
 Speech recognition is a separate native stage. SpeechAnalyzer and SpeechTranscriber perform on-device speech-to-text suitable for meetings; Foundation Models then interprets that temporary text.
 
 The current M1 implementation uses English (US) (`en-US`) for both speech recognition and meeting understanding regardless of the Mac's system locale. Locale selection is not yet a user-facing control.

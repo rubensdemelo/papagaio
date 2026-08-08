@@ -96,6 +96,8 @@ Meeting data is ephemeral in the MVP:
 
 The project uses Xcode 26.6, Swift 6, and a macOS 26 deployment target. Build and test from the repository root:
 
+Development builds must use a stable Apple Development signing identity so macOS can associate microphone permission with the same Papagaio bundle and signing authority across frequent rebuilds. Copy `Config/Development.xcconfig.example` to `Config/Development.xcconfig`, set `DEVELOPMENT_TEAM` to the team shown in Xcode’s Signing & Capabilities editor, and sign in to Xcode with that Apple Developer account. `make final` automatically uses the local config when present. Do not delete or recreate that identity while testing, because changing the bundle identifier or signing authority legitimately causes macOS to ask again. If no local config exists, the build falls back to Xcode’s ad-hoc “Sign to Run Locally” behavior, which is suitable only for transient builds and may cause TCC to ask again after rebuilds.
+
 ```sh
 xcodebuild \
   -project Papagaio.xcodeproj \

@@ -141,6 +141,51 @@ final class ApplicationShellTests: XCTestCase {
         XCTAssertEqual(presentation.symbolName, "exclamationmark.circle.fill")
     }
 
+    func testAppleIntelligenceDisabledNoticeIsShownOnceAndOnlyForDisabledState() {
+        let suiteName = "PapagaioTests.Notice.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+
+        let disabledReadiness = SessionReadiness(
+            checks: [
+                PrerequisiteCheck(
+                    kind: .appleIntelligence,
+                    reason: .appleIntelligenceDisabled
+                )
+            ]
+        )
+        let notReadyReadiness = SessionReadiness(
+            checks: [
+                PrerequisiteCheck(
+                    kind: .appleIntelligence,
+                    reason: .languageModelNotReady
+                )
+            ]
+        )
+
+        let presenter = AppleIntelligenceDisabledNoticePresenter(defaults: defaults)
+        presenter.update(for: notReadyReadiness)
+        XCTAssertFalse(presenter.isVisible)
+
+        presenter.update(for: disabledReadiness)
+        XCTAssertTrue(presenter.isVisible)
+
+        let secondPresenter = AppleIntelligenceDisabledNoticePresenter(defaults: defaults)
+        secondPresenter.update(for: disabledReadiness)
+        XCTAssertFalse(secondPresenter.isVisible)
+    }
+
+    func testAppleIntelligenceDisabledNoticeExplainsModelDownloadAndStorageWithoutExactSize() {
+        let detail = AppleIntelligenceDisabledNoticePresentation.detail
+
+        XCTAssertTrue(detail.contains("on-device models"))
+        XCTAssertTrue(detail.contains("several gigabytes"))
+        XCTAssertTrue(detail.contains("free disk space"))
+        XCTAssertFalse(detail.range(of: #"\b\d+(?:\.\d+)?\s*(?:GB|TB|gigabytes?)\b"#, options: .regularExpression) != nil)
+    }
+
     func testVoiceFeedbackUsesNonContentSpeechActivityInsteadOfTranscript() {
         let presentation = VoiceFeedbackPresentation(
             status: .listening,

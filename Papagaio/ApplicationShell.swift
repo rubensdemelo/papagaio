@@ -198,13 +198,20 @@ final class FakeSessionController: SessionShellControlling {
 struct PapagaioView<Controller: SessionShellControlling>: View {
     @ObservedObject private var controller: Controller
     @ObservedObject private var resourceFolderController: LocalResourceFolderController
+    @StateObject private var noticePresenter: AppleIntelligenceDisabledNoticePresenter
 
     init(
         controller: Controller,
-        resourceFolderController: LocalResourceFolderController
+        resourceFolderController: LocalResourceFolderController,
+        noticeDefaults: UserDefaults = .standard
     ) {
         self.controller = controller
         self.resourceFolderController = resourceFolderController
+        _noticePresenter = StateObject(
+            wrappedValue: AppleIntelligenceDisabledNoticePresenter(
+                defaults: noticeDefaults
+            )
+        )
     }
 
     var body: some View {
@@ -227,6 +234,10 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .task {
             await controller.checkReadiness()
+            noticePresenter.update(for: controller.readiness)
+        }
+        .onChange(of: controller.readiness) { _, readiness in
+            noticePresenter.update(for: readiness)
         }
     }
 
@@ -315,6 +326,11 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
                     if let readiness = controller.readiness, !readiness.isReady {
                         PrerequisiteChecklistView(report: readiness)
                             .padding(.horizontal, 24)
+
+                        if noticePresenter.isVisible {
+                            AppleIntelligenceDisabledNoticeView()
+                                .padding(.horizontal, 24)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -403,6 +419,75 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         case .stopped, .interrupted, .unavailable:
             "Starts a new listening session. Keyboard shortcut Command-L."
         }
+    }
+}
+
+struct AppleIntelligenceDisabledNoticePresentation: Equatable {
+    static let title = "Apple Intelligence is turned off"
+    static let detail = "Turning it on downloads on-device models and requires several gigabytes of free disk space. Open System Settings → Apple Intelligence & Siri to enable it."
+}
+
+@MainActor
+final class AppleIntelligenceDisabledNoticePresenter: ObservableObject {
+    static let defaultsKey = "papagaio.appleIntelligenceDisabledNoticePresented"
+
+    @Published private(set) var isVisible = false
+
+    private let defaults: UserDefaults
+    private var hasPresented: Bool
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        hasPresented = defaults.bool(
+            forKey: Self.defaultsKey
+        )
+    }
+
+    func update(for readiness: SessionReadiness?) {
+        guard !hasPresented,
+              readiness?.checks.contains(where: { check in
+                  check.kind == .appleIntelligence
+                      && check.reason == .appleIntelligenceDisabled
+              }) == true else {
+            return
+        }
+
+        hasPresented = true
+        defaults.set(true, forKey: Self.defaultsKey)
+        isVisible = true
+    }
+}
+
+private struct AppleIntelligenceDisabledNoticeView: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "internaldrive.fill")
+                .foregroundStyle(.orange)
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(AppleIntelligenceDisabledNoticePresentation.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(AppleIntelligenceDisabledNoticePresentation.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: 460, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.orange.opacity(0.10))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.orange.opacity(0.25), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(AppleIntelligenceDisabledNoticePresentation.title). \(AppleIntelligenceDisabledNoticePresentation.detail)"
+        )
     }
 }
 
