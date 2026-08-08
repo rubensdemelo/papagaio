@@ -16,6 +16,11 @@ It is not an enterprise recording platform, collaboration workspace, meeting arc
 
 The app opens to one clear listening control and a small status indicator.
 
+Rio also remains available from the macOS menu bar while the app is running. The
+menu-bar menu provides the same start/stop listening action as the main window,
+plus Open Rio and Quit Rio actions. Closing the main window does not quit Rio;
+the menu-bar item remains the way to reopen or quit the app.
+
 While listening, Rio shows a live microphone input level and non-content speech-recognition activity status so the user can tell that capture is active without exposing a transcript. The user can pause and resume capture without ending the session, or stop listening to clear the session. A concise cue explains that processing is temporary and on-device.
 
 When the user starts listening:

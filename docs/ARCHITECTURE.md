@@ -22,7 +22,10 @@ System/meeting audio ─┘             │
                          structured insight updates
                                     │
                                     v
-                           live SwiftUI insight cards
+live SwiftUI insight cards
+
+                         MenuBarExtra
+                    start/stop, open, quit
 
                        non-content voice feedback
                        (input level + recognition activity)
@@ -132,6 +135,14 @@ Diagnostics may record durations, queue depth, model availability, and error cod
 - Context batching and model generation are serialized so insight requests do not race.
 - SwiftUI state changes occur on the main actor.
 - Session cancellation propagates through capture, speech analysis, context processing, generation, and UI state.
+
+### Application shell
+
+The app exposes a native `MenuBarExtra` alongside the main `WindowGroup`. The
+menu-bar scene shares the main actor-isolated `LiveSessionController`, so its
+start/stop action cannot create a second listening session or a separate insight
+store. Open Rio targets the main window scene by ID; Quit Rio terminates the
+application. The menu-bar scene has no meeting-data state of its own.
 
 ## Failure behavior
 
