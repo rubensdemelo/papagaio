@@ -1,6 +1,9 @@
-.PHONY: final
+.PHONY: clean final
 
-final:
+clean:
+	@rm -rf .build 2>/dev/null || true
+
+final: clean
 	@pkill -x Rio 2>/dev/null || true
 	@if test -f Config/Development.xcconfig; then \
 		xcodebuild \
