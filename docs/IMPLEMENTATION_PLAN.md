@@ -1,4 +1,4 @@
-# Papagaio Implementation Plan
+# Rio Implementation Plan
 
 This plan turns the MVP roadmap into focused, execution-ready work packages. The immediate target is Roadmap Milestone 1: a microphone-driven native vertical slice from live audio to temporary finalized speech, bounded context, typed insight updates, and SwiftUI cards.
 
@@ -73,7 +73,7 @@ A task is complete only when:
 
 #### Build
 
-- Create `Papagaio.xcodeproj`.
+- Create `Rio.xcodeproj`.
 - Add a macOS SwiftUI application target and unit-test target.
 - Set the deployment target to macOS 26.
 - Enable Swift 6 and strict concurrency checking.
@@ -401,14 +401,14 @@ Run at minimum:
 
 ```sh
 xcodebuild \
-  -project Papagaio.xcodeproj \
+  -project Rio.xcodeproj \
   -scheme Rio \
   -configuration Debug \
   -destination 'platform=macOS' \
   build
 
 xcodebuild \
-  -project Papagaio.xcodeproj \
+  -project Rio.xcodeproj \
   -scheme Rio \
   -destination 'platform=macOS' \
   test

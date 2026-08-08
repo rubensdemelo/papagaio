@@ -165,7 +165,7 @@ final class LiveSessionController: SessionShellControlling {
 }
 
 @MainActor
-enum PapagaioCompositionRoot {
+enum RioCompositionRoot {
     static let defaultLocaleIdentifier = "en-US"
 
     static func makeLiveController() -> LiveSessionController {

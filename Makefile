@@ -8,7 +8,7 @@ final: clean
 	@if test -f Config/Development.xcconfig; then \
 		xcodebuild \
 			-xcconfig Config/Development.xcconfig \
-			-project Papagaio.xcodeproj \
+			-project Rio.xcodeproj \
 			-scheme Rio \
 			-configuration Debug \
 			-destination 'platform=macOS' \
@@ -17,7 +17,7 @@ final: clean
 			build; \
 	else \
 	xcodebuild \
-		-project Papagaio.xcodeproj \
+		-project Rio.xcodeproj \
 		-scheme Rio \
 		-configuration Debug \
 		-destination 'platform=macOS' \

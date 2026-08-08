@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10000010000000000000001 /* PapagaioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* PapagaioApp.swift */; };
-		A10000010000000000000002 /* PapagaioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000005 /* PapagaioTests.swift */; };
+		A10000010000000000000001 /* RioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* RioApp.swift */; };
+		A10000010000000000000002 /* RioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000005 /* RioTests.swift */; };
 		A10000010000000000000003 /* CoreDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007 /* CoreDomain.swift */; };
 		A10000010000000000000004 /* CoreContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008 /* CoreContracts.swift */; };
 		A10000010000000000000006 /* CoreContractsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000A /* CoreContractsTests.swift */; };
@@ -46,12 +46,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A20000010000000000000001 /* PapagaioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PapagaioApp.swift; sourceTree = "<group>"; };
+		A20000010000000000000001 /* RioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RioApp.swift; sourceTree = "<group>"; };
 		A20000010000000000000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A20000010000000000000003 /* Papagaio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Papagaio.entitlements; sourceTree = "<group>"; };
+		A20000010000000000000003 /* Rio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Rio.entitlements; sourceTree = "<group>"; };
 		A20000010000000000000004 /* Rio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rio.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A20000010000000000000005 /* PapagaioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PapagaioTests.swift; sourceTree = "<group>"; };
-		A20000010000000000000006 /* PapagaioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PapagaioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000005 /* RioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RioTests.swift; sourceTree = "<group>"; };
+		A20000010000000000000006 /* RioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000010000000000000007 /* CoreDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDomain.swift; sourceTree = "<group>"; };
 		A20000010000000000000008 /* CoreContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreContracts.swift; sourceTree = "<group>"; };
 		A20000010000000000000009 /* DeterministicDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeterministicDoubles.swift; sourceTree = "<group>"; };
@@ -103,8 +103,8 @@
 		A40000010000000000000001 = {
 			isa = PBXGroup;
 			children = (
-				A40000010000000000000002 /* Papagaio */,
-				A40000010000000000000003 /* PapagaioTests */,
+				A40000010000000000000002 /* Rio */,
+				A40000010000000000000003 /* RioTests */,
 				A40000010000000000000004 /* Products */,
 				A2000001000000000000000C /* FoundationModels.framework */,
 				A20000010000000000000011 /* AVFAudio.framework */,
@@ -112,12 +112,12 @@
 			);
 			sourceTree = "<group>";
 		};
-		A40000010000000000000002 /* Papagaio */ = {
+		A40000010000000000000002 /* Rio */ = {
 			isa = PBXGroup;
 			children = (
-				A20000010000000000000001 /* PapagaioApp.swift */,
+				A20000010000000000000001 /* RioApp.swift */,
 				A20000010000000000000002 /* Info.plist */,
-				A20000010000000000000003 /* Papagaio.entitlements */,
+				A20000010000000000000003 /* Rio.entitlements */,
 				A20000010000000000000007 /* CoreDomain.swift */,
 				A20000010000000000000008 /* CoreContracts.swift */,
 				A20000010000000000000009 /* DeterministicDoubles.swift */,
@@ -130,13 +130,13 @@
 				A2000001000000000000001B /* LocalResourceFolder.swift */,
 				A2000001000000000000001A /* Assets.xcassets */,
 			);
-			path = Papagaio;
+			path = Rio;
 			sourceTree = "<group>";
 		};
-		A40000010000000000000003 /* PapagaioTests */ = {
+		A40000010000000000000003 /* RioTests */ = {
 			isa = PBXGroup;
 			children = (
-				A20000010000000000000005 /* PapagaioTests.swift */,
+				A20000010000000000000005 /* RioTests.swift */,
 				A2000001000000000000000A /* CoreContractsTests.swift */,
 				A2000001000000000000000D /* FoundationModelsAdapterTests.swift */,
 				A2000001000000000000000F /* ApplicationShellTests.swift */,
@@ -146,14 +146,14 @@
 				A20000010000000000000019 /* VerticalSliceIntegrationTests.swift */,
 				A2000001000000000000001C /* LocalResourceFolderTests.swift */,
 			);
-			path = PapagaioTests;
+			path = RioTests;
 			sourceTree = "<group>";
 		};
 		A40000010000000000000004 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				A20000010000000000000004 /* Rio.app */,
-				A20000010000000000000006 /* PapagaioTests.xctest */,
+				A20000010000000000000006 /* RioTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -161,9 +161,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A50000010000000000000001 /* Papagaio */ = {
+		A50000010000000000000001 /* Rio */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A60000010000000000000001 /* Build configuration list for PBXNativeTarget "Papagaio" */;
+			buildConfigurationList = A60000010000000000000001 /* Build configuration list for PBXNativeTarget "Rio" */;
 			buildPhases = (
 				A30000010000000000000003 /* Sources */,
 				A30000010000000000000001 /* Frameworks */,
@@ -173,14 +173,14 @@
 			);
 			dependencies = (
 			);
-			name = Papagaio;
-			productName = Papagaio;
+			name = Rio;
+			productName = Rio;
 			productReference = A20000010000000000000004 /* Rio.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A50000010000000000000002 /* PapagaioTests */ = {
+		A50000010000000000000002 /* RioTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A60000010000000000000002 /* Build configuration list for PBXNativeTarget "PapagaioTests" */;
+			buildConfigurationList = A60000010000000000000002 /* Build configuration list for PBXNativeTarget "RioTests" */;
 			buildPhases = (
 				A30000010000000000000005 /* Sources */,
 				A30000010000000000000002 /* Frameworks */,
@@ -190,9 +190,9 @@
 			);
 			dependencies = (
 			);
-			name = PapagaioTests;
-			productName = PapagaioTests;
-			productReference = A20000010000000000000006 /* PapagaioTests.xctest */;
+			name = RioTests;
+			productName = RioTests;
+			productReference = A20000010000000000000006 /* RioTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -213,7 +213,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A60000010000000000000003 /* Build configuration list for PBXProject "Papagaio" */;
+			buildConfigurationList = A60000010000000000000003 /* Build configuration list for PBXProject "Rio" */;
 			compatibilityVersion = "Xcode 16.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -226,8 +226,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A50000010000000000000001 /* Papagaio */,
-				A50000010000000000000002 /* PapagaioTests */,
+				A50000010000000000000001 /* Rio */,
+				A50000010000000000000002 /* RioTests */,
 			);
 		};
 /* End PBXProject section */
@@ -255,7 +255,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000010000000000000001 /* PapagaioApp.swift in Sources */,
+				A10000010000000000000001 /* RioApp.swift in Sources */,
 				A10000010000000000000003 /* CoreDomain.swift in Sources */,
 				A10000010000000000000004 /* CoreContracts.swift in Sources */,
 				A1000001000000000000000A /* FoundationModelsAdapter.swift in Sources */,
@@ -272,7 +272,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000010000000000000002 /* PapagaioTests.swift in Sources */,
+				A10000010000000000000002 /* RioTests.swift in Sources */,
 				A10000010000000000000006 /* CoreContractsTests.swift in Sources */,
 				A10000010000000000000007 /* CoreDomain.swift in Tests */,
 				A10000010000000000000008 /* CoreContracts.swift in Tests */,
@@ -326,12 +326,12 @@
 		A80000010000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Papagaio/Papagaio.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Rio/Rio.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = Q857P34S8A;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Papagaio/Info.plist;
+				INFOPLIST_FILE = Rio/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rio.app;
 				PRODUCT_NAME = Rio;
@@ -345,12 +345,12 @@
 		A80000010000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Papagaio/Papagaio.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Rio/Rio.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = Q857P34S8A;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Papagaio/Info.plist;
+				INFOPLIST_FILE = Rio/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rio.app;
 				PRODUCT_NAME = Rio;
@@ -366,8 +366,8 @@
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.papagaio.tests;
-				PRODUCT_NAME = PapagaioTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rio.tests;
+				PRODUCT_NAME = RioTests;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -380,8 +380,8 @@
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.papagaio.tests;
-				PRODUCT_NAME = PapagaioTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rio.tests;
+				PRODUCT_NAME = RioTests;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -392,7 +392,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A60000010000000000000001 /* Build configuration list for PBXNativeTarget "Papagaio" */ = {
+		A60000010000000000000001 /* Build configuration list for PBXNativeTarget "Rio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A80000010000000000000003 /* Debug */,
@@ -401,7 +401,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A60000010000000000000002 /* Build configuration list for PBXNativeTarget "PapagaioTests" */ = {
+		A60000010000000000000002 /* Build configuration list for PBXNativeTarget "RioTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A80000010000000000000005 /* Debug */,
@@ -410,7 +410,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A60000010000000000000003 /* Build configuration list for PBXProject "Papagaio" */ = {
+		A60000010000000000000003 /* Build configuration list for PBXProject "Rio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A80000010000000000000001 /* Debug */,

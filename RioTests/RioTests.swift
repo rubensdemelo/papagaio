@@ -1,6 +1,6 @@
 import XCTest
 
-final class PapagaioTests: XCTestCase {
+final class RioTests: XCTestCase {
     func testTestBundleLoads() {
         XCTAssertTrue(true)
     }

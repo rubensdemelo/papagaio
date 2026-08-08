@@ -2,13 +2,13 @@ import AppKit
 import SwiftUI
 
 @main
-struct PapagaioApp: App {
+struct RioApp: App {
     @StateObject private var sessionController: LiveSessionController
     @StateObject private var resourceFolderController: LocalResourceFolderController
 
     init() {
         _sessionController = StateObject(
-            wrappedValue: PapagaioCompositionRoot.makeLiveController()
+            wrappedValue: RioCompositionRoot.makeLiveController()
         )
         _resourceFolderController = StateObject(
             wrappedValue: LocalResourceFolderController()
@@ -17,7 +17,7 @@ struct PapagaioApp: App {
 
     var body: some Scene {
         WindowGroup("Rio", id: "main") {
-            PapagaioView(
+            RioView(
                 controller: sessionController,
                 resourceFolderController: resourceFolderController
             )

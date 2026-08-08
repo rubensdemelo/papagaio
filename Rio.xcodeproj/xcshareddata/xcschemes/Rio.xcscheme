@@ -16,8 +16,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A50000010000000000000001"
                BuildableName = "Rio.app"
-               BlueprintName = "Papagaio"
-               ReferencedContainer = "container:Papagaio.xcodeproj">
+               BlueprintName = "Rio"
+               ReferencedContainer = "container:Rio.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A50000010000000000000002"
-               BuildableName = "PapagaioTests.xctest"
-               BlueprintName = "PapagaioTests"
-               ReferencedContainer = "container:Papagaio.xcodeproj">
+               BuildableName = "RioTests.xctest"
+               BlueprintName = "RioTests"
+               ReferencedContainer = "container:Rio.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,9 +47,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A50000010000000000000002"
-               BuildableName = "PapagaioTests.xctest"
-               BlueprintName = "PapagaioTests"
-               ReferencedContainer = "container:Papagaio.xcodeproj">
+               BuildableName = "RioTests.xctest"
+               BlueprintName = "RioTests"
+               ReferencedContainer = "container:Rio.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -70,8 +70,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A50000010000000000000001"
             BuildableName = "Rio.app"
-            BlueprintName = "Papagaio"
-            ReferencedContainer = "container:Papagaio.xcodeproj">
+            BlueprintName = "Rio"
+            ReferencedContainer = "container:Rio.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -85,8 +85,8 @@
          BuildableIdentifier = "primary"
          BlueprintIdentifier = "A50000010000000000000001"
          BuildableName = "Rio.app"
-         BlueprintName = "Papagaio"
-         ReferencedContainer = "container:Papagaio.xcodeproj">
+         BlueprintName = "Rio"
+         ReferencedContainer = "container:Rio.xcodeproj">
       </BuildableReference>
    </ProfileAction>
    <AnalyzeAction buildConfiguration = "Debug">

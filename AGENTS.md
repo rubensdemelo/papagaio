@@ -2,9 +2,9 @@
 
 ## Project goal
 
-Papagaio is a deliberately simple macOS app that listens to meetings and shows useful live insights. The insight stream is the product.
+Rio is a deliberately simple macOS app that listens to meetings and shows useful live insights. The insight stream is the product.
 
-Audio capture and speech-to-text are temporary implementation stages. Papagaio is not a transcription app, note-taking app, meeting recorder, or meeting archive.
+Audio capture and speech-to-text are temporary implementation stages. Rio is not a transcription app, note-taking app, meeting recorder, or meeting archive.
 
 Read these documents before changing product behavior or architecture:
 

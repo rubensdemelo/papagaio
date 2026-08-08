@@ -195,7 +195,7 @@ final class FakeSessionController: SessionShellControlling {
     }
 }
 
-struct PapagaioView<Controller: SessionShellControlling>: View {
+struct RioView<Controller: SessionShellControlling>: View {
     @ObservedObject private var controller: Controller
     @ObservedObject private var resourceFolderController: LocalResourceFolderController
     @StateObject private var noticePresenter: AppleIntelligenceDisabledNoticePresenter
@@ -1087,21 +1087,21 @@ private extension InsightCard {
 }
 
 #Preview("Stopped") {
-    PapagaioView(
+    RioView(
         controller: FakeSessionController(),
         resourceFolderController: LocalResourceFolderController()
     )
 }
 
 #Preview("Listening — empty") {
-    PapagaioView(
+    RioView(
         controller: FakeSessionController(status: .listening),
         resourceFolderController: LocalResourceFolderController()
     )
 }
 
 #Preview("Insight cards") {
-    PapagaioView(
+    RioView(
         controller: FakeSessionController(
             status: .listening,
             cards: [
@@ -1133,7 +1133,7 @@ private extension InsightCard {
 }
 
 #Preview("Unavailable") {
-    PapagaioView(
+    RioView(
         controller: FakeSessionController(
             status: .unavailable,
             unavailableReason: .appleIntelligenceDisabled,
@@ -1144,7 +1144,7 @@ private extension InsightCard {
 }
 
 #Preview("Interrupted") {
-    PapagaioView(
+    RioView(
         controller: FakeSessionController(
             status: .interrupted,
             failure: .stage(.audioCapture, .interrupted),

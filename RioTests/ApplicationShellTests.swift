@@ -3,7 +3,7 @@ import XCTest
 @MainActor
 final class ApplicationShellTests: XCTestCase {
     func testLiveCompositionUsesFixedEnglishUSLocale() {
-        XCTAssertEqual(PapagaioCompositionRoot.defaultLocaleIdentifier, "en-US")
+        XCTAssertEqual(RioCompositionRoot.defaultLocaleIdentifier, "en-US")
     }
 
     func testPrimaryActionStartsAndStopsExactlyOnce() async {
@@ -142,7 +142,7 @@ final class ApplicationShellTests: XCTestCase {
     }
 
     func testAppleIntelligenceDisabledNoticeIsShownOnceAndOnlyForDisabledState() {
-        let suiteName = "PapagaioTests.Notice.\(UUID().uuidString)"
+        let suiteName = "RioTests.Notice.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer {
             defaults.removePersistentDomain(forName: suiteName)

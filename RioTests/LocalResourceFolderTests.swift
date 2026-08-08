@@ -17,7 +17,7 @@ final class LocalResourceFolderTests: XCTestCase {
     }
 
     func testValidatorReportsMissingDirectory() {
-        let url = URL(fileURLWithPath: "/tmp/papagaio-resource-folder-that-does-not-exist")
+        let url = URL(fileURLWithPath: "/tmp/rio-resource-folder-that-does-not-exist")
 
         let result = LocalResourceFolderValidator().validate(url: url)
 
@@ -26,7 +26,7 @@ final class LocalResourceFolderTests: XCTestCase {
 
     func testValidatorRejectsAFileAsAResourceFolder() throws {
         let file = FileManager.default.temporaryDirectory
-            .appendingPathComponent("papagaio-resource-file-(UUID().uuidString)")
+            .appendingPathComponent("rio-resource-file-(UUID().uuidString)")
         try Data("synthetic fixture".utf8).write(to: file)
         defer { try? FileManager.default.removeItem(at: file) }
 
@@ -77,13 +77,13 @@ final class LocalResourceFolderTests: XCTestCase {
 
     private func makeTemporaryDirectory() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("papagaio-resource-folder-(UUID().uuidString)")
+            .appendingPathComponent("rio-resource-folder-(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         return directory
     }
 
     private func makeDefaults() -> UserDefaults {
-        let suiteName = "PapagaioTests.LocalResourceFolder.(UUID().uuidString)"
+        let suiteName = "RioTests.LocalResourceFolder.(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defaults.removePersistentDomain(forName: suiteName)
         return defaults
