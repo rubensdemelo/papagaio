@@ -204,15 +204,15 @@ extension LocalResourceFolderError {
     var detail: String {
         switch self {
         case .accessLost:
-            "Choose the folder again to give Papagaio access under macOS sandbox rules."
+            "Choose the folder again to give Rio access under macOS sandbox rules."
         case .missing:
             "The folder may have been moved or disconnected. Choose it again."
         case .notDirectory:
             "Choose a folder containing manuals and support resources."
         case .notReadable:
-            "Papagaio cannot read this location. Check its permissions or choose another folder."
+            "Rio cannot read this location. Check its permissions or choose another folder."
         case .bookmarkSaveFailed, .bookmarkRefreshFailed:
-            "Choose the folder again. Papagaio keeps only its access permission, not the folder contents."
+            "Choose the folder again. Rio keeps only its access permission, not the folder contents."
         }
     }
 

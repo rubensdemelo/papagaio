@@ -402,14 +402,14 @@ Run at minimum:
 ```sh
 xcodebuild \
   -project Papagaio.xcodeproj \
-  -scheme Papagaio \
+  -scheme Rio \
   -configuration Debug \
   -destination 'platform=macOS' \
   build
 
 xcodebuild \
   -project Papagaio.xcodeproj \
-  -scheme Papagaio \
+  -scheme Rio \
   -destination 'platform=macOS' \
   test
 ```

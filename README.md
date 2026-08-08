@@ -1,8 +1,8 @@
-# Papagaio
+# Rio
 
-Papagaio is a deliberately simple macOS app that listens to meetings and shows useful insights while the conversation is still happening.
+Rio is a deliberately simple macOS meeting assistant for IBM employees. Bob helps with coding; Rio helps with meetings by showing useful insights while the conversation is still happening.
 
-The insight stream is the product. Papagaio is not a transcription app, note-taking app, meeting recorder, or meeting archive.
+The insight stream is the product. Rio is not a transcription app, note-taking app, meeting recorder, or meeting archive.
 
 ## Status
 
@@ -18,9 +18,9 @@ The app has one primary action: start or stop listening. During a meeting, it su
 - Open questions.
 - Risks, blockers, and unresolved topics.
 
-Insights update or replace stale cards instead of accumulating duplicates. Papagaio never guesses an action-item owner; it includes one only when the meeting explicitly names that person.
+Insights update or replace stale cards instead of accumulating duplicates. Rio never guesses an action-item owner; it includes one only when the meeting explicitly names that person.
 
-Papagaio does not display a live transcript. Audio and temporary speech-to-text output are discarded continuously and cleared when listening stops.
+Rio does not display a live transcript. Audio and temporary speech-to-text output are discarded continuously and cleared when listening stops.
 
 ## Apple-native pipeline
 
@@ -60,7 +60,7 @@ The first release targets:
 - English (US) speech and language-model support; the current M1 composition root uses `en-US` regardless of the Mac's system locale.
 - Microphone and screen-capture permissions.
 
-Papagaio checks these capabilities at runtime and explains unavailable states. The MVP does not use a cloud-model fallback.
+Rio checks these capabilities at runtime and explains unavailable states. The MVP does not use a cloud-model fallback.
 
 ## Data lifecycle
 
@@ -96,12 +96,12 @@ Meeting data is ephemeral in the MVP:
 
 The project uses Xcode 26.6, Swift 6, and a macOS 26 deployment target. Build and test from the repository root:
 
-Development builds must use a stable Apple Development signing identity so macOS can associate microphone permission with the same Papagaio bundle and signing authority across frequent rebuilds. Copy `Config/Development.xcconfig.example` to `Config/Development.xcconfig`, set `DEVELOPMENT_TEAM` to the team shown in Xcode’s Signing & Capabilities editor, and sign in to Xcode with that Apple Developer account. `make final` automatically uses the local config when present. Do not delete or recreate that identity while testing, because changing the bundle identifier or signing authority legitimately causes macOS to ask again. If no local config exists, the build falls back to Xcode’s ad-hoc “Sign to Run Locally” behavior, which is suitable only for transient builds and may cause TCC to ask again after rebuilds.
+Development builds must use a stable Apple Development signing identity so macOS can associate microphone permission with the same Rio bundle and signing authority across frequent rebuilds. Copy `Config/Development.xcconfig.example` to `Config/Development.xcconfig`, set `DEVELOPMENT_TEAM` to the team shown in Xcode’s Signing & Capabilities editor, and sign in to Xcode with that Apple Developer account. `make final` automatically uses the local config when present. Do not delete or recreate that identity while testing, because changing the bundle identifier or signing authority legitimately causes macOS to ask again. If no local config exists, the build falls back to Xcode’s ad-hoc “Sign to Run Locally” behavior, which is suitable only for transient builds and may cause TCC to ask again after rebuilds.
 
 ```sh
 xcodebuild \
   -project Papagaio.xcodeproj \
-  -scheme Papagaio \
+  -scheme Rio \
   -configuration Debug \
   -destination 'platform=macOS' \
   SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
@@ -109,7 +109,7 @@ xcodebuild \
 
 xcodebuild \
   -project Papagaio.xcodeproj \
-  -scheme Papagaio \
+  -scheme Rio \
   -configuration Release \
   -destination 'platform=macOS' \
   SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
@@ -117,14 +117,14 @@ xcodebuild \
 
 xcodebuild \
   -project Papagaio.xcodeproj \
-  -scheme Papagaio \
+  -scheme Rio \
   -configuration Debug \
   -destination 'platform=macOS' \
   test
 
 xcodebuild \
   -project Papagaio.xcodeproj \
-  -scheme Papagaio \
+  -scheme Rio \
   -configuration Release \
   -destination 'platform=macOS' \
   test

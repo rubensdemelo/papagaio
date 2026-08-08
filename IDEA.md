@@ -1,20 +1,20 @@
-# Papagaio
+# Rio
 
-Papagaio is a deliberately simple macOS live incident copilot for technical-support meetings. It listens to a client troubleshooting call and surfaces useful, evidence-grounded directions while the conversation is still happening.
+Rio is a deliberately simple macOS meeting assistant for IBM employees. Bob helps with coding; Rio helps with meetings by listening to a client troubleshooting call and surfacing useful, evidence-grounded directions while the conversation is still happening.
 
 ## Product promise
 
 Start listening, stay engaged in the support call, and see meaningful technical signals and next-best questions as they emerge.
 
-Papagaio is not a transcription, note-taking, diagnosis, or autonomous-action app. Speech-to-text exists only as temporary input for understanding the call. The live transcript is not a product surface, and neither audio nor transcript text is retained after it is no longer needed for insight generation.
+Rio is not a transcription, note-taking, diagnosis, or autonomous-action app. Speech-to-text exists only as temporary input for understanding the call. The live transcript is not a product surface, and neither audio nor transcript text is retained after it is no longer needed for insight generation.
 
-For technical-support calls, Papagaio identifies symptoms, errors, product/version/environment facts, recent changes, failed checks, and unanswered diagnostic questions. It can formulate retrieval intent for trusted local manuals and runbooks and present evidence-grounded possible directions. It must preserve uncertainty, never invent an owner or source, and never take action on the user's behalf.
+For technical-support calls, Rio identifies symptoms, errors, product/version/environment facts, recent changes, failed checks, and unanswered diagnostic questions. It can formulate retrieval intent for trusted local manuals and runbooks and present evidence-grounded possible directions. It must preserve uncertainty, never invent an owner or source, and never take action on the user's behalf.
 
 ## MVP
 
 The first release targets macOS 26+ on Macs that support Apple Intelligence.
 
-Papagaio uses native Apple technologies:
+Rio uses native Apple technologies:
 
 - ScreenCaptureKit for meeting/system audio and microphone capture.
 - SpeechAnalyzer and SpeechTranscriber for temporary, on-device speech-to-text.

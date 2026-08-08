@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Papagaio</string>
+	<string>Rio</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleName</key>
-	<string>Papagaio</string>
+	<string>Rio</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -17,6 +17,6 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Papagaio needs microphone access to process meeting audio temporarily for live insights.</string>
+	<string>Rio needs microphone access to process meeting audio temporarily for live insights.</string>
 </dict>
 </plist>

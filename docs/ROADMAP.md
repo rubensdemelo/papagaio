@@ -1,4 +1,4 @@
-# Papagaio Roadmap
+# Rio Roadmap
 
 The repository contains the native M1 implementation through the vertical-slice integration. Milestone 1 remains open until its hardware and long-running validation gates pass.
 
@@ -45,13 +45,13 @@ Goal: make the vertical slice work with actual remote meetings.
 
 - Add system/meeting audio capture with ScreenCaptureKit.
 - Capture or combine microphone audio without recording either source.
-- Exclude Papagaio's own process audio.
+- Exclude Rio's own process audio.
 - Add microphone and screen-capture permission onboarding.
 - Add source and input-level status without exposing transcript text.
 - Handle device changes, selected-source loss, sleep and wake, and permission revocation.
 - Test speaker-output duplication and document headphone expectations or add mitigation if needed.
 
-Exit criterion: Papagaio can listen to both sides of a meeting in common conferencing apps and maintain an accurate listening state.
+Exit criterion: Rio can listen to both sides of a meeting in common conferencing apps and maintain an accurate listening state.
 
 ## Milestone 3: Useful live insights
 

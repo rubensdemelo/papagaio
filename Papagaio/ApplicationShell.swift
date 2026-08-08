@@ -244,7 +244,7 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Papagaio")
+                Text("Rio")
                     .font(.title2.weight(.semibold))
                     .accessibilityAddTraits(.isHeader)
                 Text("Live meeting insights")
@@ -415,7 +415,7 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         case .paused:
             "Stops the paused session and clears its insights. Keyboard shortcut Command-L."
         case .checkingAvailability:
-            "Papagaio is checking whether listening can begin."
+            "Rio is checking whether listening can begin."
         case .stopped, .interrupted, .unavailable:
             "Starts a new listening session. Keyboard shortcut Command-L."
         }
@@ -429,7 +429,7 @@ struct AppleIntelligenceDisabledNoticePresentation: Equatable {
 
 @MainActor
 final class AppleIntelligenceDisabledNoticePresenter: ObservableObject {
-    static let defaultsKey = "papagaio.appleIntelligenceDisabledNoticePresented"
+    static let defaultsKey = "rio.appleIntelligenceDisabledNoticePresented"
 
     @Published private(set) var isVisible = false
 
@@ -508,7 +508,7 @@ private struct LocalResourceFolderSection: View {
                     .accessibilityHint("Choose a local folder for manuals and support resources.")
             }
 
-            Text("Optional folder for manuals and support resources. Papagaio only keeps access to the folder location; it does not read, search, or upload files yet. Use Docling later to convert manuals to Markdown.")
+            Text("Optional folder for manuals and support resources. Rio only keeps access to the folder location; it does not read, search, or upload files yet. Use Docling later to convert manuals to Markdown.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -920,7 +920,7 @@ struct SessionStatusPresentation: Equatable {
         case .unavailable:
             title = "Unavailable"
             detail = unavailableReason?.guidanceMessage ?? failure?.guidanceMessage
-                ?? "Papagaio could not start listening."
+                ?? "Rio could not start listening."
             symbolName = "xmark.circle"
             tintName = .unavailable
         }
@@ -961,7 +961,7 @@ struct EmptyStatePresentation: Equatable {
             symbolName = "ear"
         case .processing:
             title = "Insights are on the way"
-            detail = "Papagaio is processing the latest meeting context."
+            detail = "Rio is processing the latest meeting context."
             symbolName = "sparkles"
         case .paused:
             title = "Listening is paused"
@@ -972,7 +972,7 @@ struct EmptyStatePresentation: Equatable {
             detail = "Start listening to try again."
             symbolName = "exclamationmark.circle"
         case .unavailable:
-            title = "Papagaio is unavailable"
+            title = "Rio is unavailable"
             detail = statusDetail
             symbolName = "xmark.circle"
         }
@@ -998,23 +998,23 @@ private extension UnavailableReason {
         case .microphonePermissionUndetermined:
             "Click Start Listening and allow microphone access when macOS asks."
         case .microphonePermissionDenied:
-            "Open System Settings → Privacy & Security → Microphone and enable Papagaio."
+            "Open System Settings → Privacy & Security → Microphone and enable Rio."
         case .audioInputUnavailable:
             "Connect or enable a microphone, then try again."
         case .speechRecognitionUnavailable:
             "This Mac cannot use on-device speech recognition. Use a supported macOS 26+ Mac."
         case .speechLocaleUnsupported(let identifier):
-            "Speech recognition does not support \(identifier). Papagaio currently requires English (US)."
+            "Speech recognition does not support \(identifier). Rio currently requires English (US)."
         case .speechAssetsNotReady:
-            "Keep this Mac online. Papagaio will download the required speech assets, then try again."
+            "Keep this Mac online. Rio will download the required speech assets, then try again."
         case .languageModelDeviceNotEligible:
             "This Mac does not support Apple Intelligence. Use a compatible Mac."
         case .appleIntelligenceDisabled:
-            "Open System Settings → Apple Intelligence & Siri. Set macOS and Siri to the same language (Papagaio requires English (US)) and turn on Apple Intelligence. If macOS says your organization restricts access, contact your IT administrator."
+            "Open System Settings → Apple Intelligence & Siri. Set macOS and Siri to the same language (Rio requires English (US)) and turn on Apple Intelligence. If macOS says your organization restricts access, contact your IT administrator."
         case .languageModelNotReady:
             "Keep Apple Intelligence enabled and this Mac online while the model finishes preparing."
         case .languageModelLocaleUnsupported(let identifier):
-            "The on-device language model does not support \(identifier). Papagaio currently requires English (US)."
+            "The on-device language model does not support \(identifier). Rio currently requires English (US)."
         }
     }
 }
@@ -1027,9 +1027,9 @@ private extension PipelineFailure {
         case .stage(_, .interrupted):
             "Listening was interrupted."
         case .stage(_, .overloaded):
-            "Papagaio could not keep up with the audio stream."
+            "Rio could not keep up with the audio stream."
         case .stage, .cancelled:
-            "Papagaio could not start listening."
+            "Rio could not start listening."
         }
     }
 }

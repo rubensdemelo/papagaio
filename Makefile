@@ -1,12 +1,12 @@
 .PHONY: final
 
 final:
-	@pkill -x Papagaio 2>/dev/null || true
+	@pkill -x Rio 2>/dev/null || true
 	@if test -f Config/Development.xcconfig; then \
 		xcodebuild \
 			-xcconfig Config/Development.xcconfig \
 			-project Papagaio.xcodeproj \
-			-scheme Papagaio \
+			-scheme Rio \
 			-configuration Debug \
 			-destination 'platform=macOS' \
 			-derivedDataPath .build/Iteration \
@@ -15,11 +15,11 @@ final:
 	else \
 	xcodebuild \
 		-project Papagaio.xcodeproj \
-		-scheme Papagaio \
+		-scheme Rio \
 		-configuration Debug \
 		-destination 'platform=macOS' \
 		-derivedDataPath .build/Iteration \
 		SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
 		build; \
 	fi
-	@open -n .build/Iteration/Build/Products/Debug/Papagaio.app
+	@open -n .build/Iteration/Build/Products/Debug/Rio.app

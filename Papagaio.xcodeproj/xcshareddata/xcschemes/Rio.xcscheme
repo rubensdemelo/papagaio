@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A50000010000000000000001"
-               BuildableName = "Papagaio.app"
+               BuildableName = "Rio.app"
                BlueprintName = "Papagaio"
                ReferencedContainer = "container:Papagaio.xcodeproj">
             </BuildableReference>
@@ -69,7 +69,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A50000010000000000000001"
-            BuildableName = "Papagaio.app"
+            BuildableName = "Rio.app"
             BlueprintName = "Papagaio"
             ReferencedContainer = "container:Papagaio.xcodeproj">
          </BuildableReference>
@@ -84,7 +84,7 @@
       <BuildableReference
          BuildableIdentifier = "primary"
          BlueprintIdentifier = "A50000010000000000000001"
-         BuildableName = "Papagaio.app"
+         BuildableName = "Rio.app"
          BlueprintName = "Papagaio"
          ReferencedContainer = "container:Papagaio.xcodeproj">
       </BuildableReference>

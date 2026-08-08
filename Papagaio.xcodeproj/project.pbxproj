@@ -49,7 +49,7 @@
 		A20000010000000000000001 /* PapagaioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PapagaioApp.swift; sourceTree = "<group>"; };
 		A20000010000000000000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000010000000000000003 /* Papagaio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Papagaio.entitlements; sourceTree = "<group>"; };
-		A20000010000000000000004 /* Papagaio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Papagaio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000004 /* Rio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000010000000000000005 /* PapagaioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PapagaioTests.swift; sourceTree = "<group>"; };
 		A20000010000000000000006 /* PapagaioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PapagaioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000010000000000000007 /* CoreDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDomain.swift; sourceTree = "<group>"; };
@@ -152,7 +152,7 @@
 		A40000010000000000000004 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A20000010000000000000004 /* Papagaio.app */,
+				A20000010000000000000004 /* Rio.app */,
 				A20000010000000000000006 /* PapagaioTests.xctest */,
 			);
 			name = Products;
@@ -175,7 +175,7 @@
 			);
 			name = Papagaio;
 			productName = Papagaio;
-			productReference = A20000010000000000000004 /* Papagaio.app */;
+			productReference = A20000010000000000000004 /* Rio.app */;
 			productType = "com.apple.product-type.application";
 		};
 		A50000010000000000000002 /* PapagaioTests */ = {
@@ -333,8 +333,8 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Papagaio/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.papagaio.app;
-				PRODUCT_NAME = Papagaio;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rio.app;
+				PRODUCT_NAME = Rio;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -352,8 +352,8 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Papagaio/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.papagaio.app;
-				PRODUCT_NAME = Papagaio;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rio.app;
+				PRODUCT_NAME = Rio;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;

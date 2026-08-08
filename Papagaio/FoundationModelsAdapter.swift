@@ -166,7 +166,7 @@ enum FoundationModelsAvailabilityMapper {
 
 enum FoundationModelsPrompt {
     static let instructions = """
-    You generate concise live meeting insight cards for Papagaio.
+    You generate concise live meeting insight cards for Rio, the meeting assistant for IBM employees.
     Return only structured insight updates.
     Use only the categories important, decision, action, question, and risk.
     Prefer updating or resolving an existing stable key over creating a duplicate.
