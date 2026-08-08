@@ -27,12 +27,14 @@ Verified on macOS 26.5.2:
 - Debug and Release builds pass with warnings treated as errors and Swift 6 complete strict-concurrency checking enabled.
 - Static privacy scans find no production logging, persistence, or networking APIs.
 - The built application launches and exits cleanly without creating meeting-content files; its inspected container contains only window-frame preferences.
+- Optional local-resource-folder selection is implemented separately from listening: the app validates and displays one folder, persists a read-only security-scoped bookmark, and reports stale or invalid access without reading folder contents.
 
 Not yet verified:
 
 - Microphone permission grant or denial behavior in the live app.
 - Live microphone speech through SpeechAnalyzer, Foundation Models availability, and visible cards.
 - Restart, interruption, unsupported-locale, model-unavailable, and stop-during-stage hardware paths.
+- Live user selection and relaunch restoration of a local resource folder through the macOS open panel and sandbox bookmark flow.
 - The 15-to-30-minute bounded-memory smoke session and Instruments resource-growth inspection.
 
 The Milestone 1 exit criterion is not marked complete until the not-yet-verified checks have direct evidence.
@@ -61,6 +63,7 @@ Goal: make the insight stream consistently useful instead of merely functional.
 - Enforce the rule against guessed action-item owners.
 - Cap active cards and prioritize newer or unresolved information.
 - Build a small, non-sensitive evaluation corpus from synthetic meeting fixtures.
+- Add the version-controlled synthetic incident-copilot evaluation pack at `docs/evaluation/incident-copilot-mvp/`.
 - Measure time from finalized speech to visible insight.
 - Handle model refusal, context overflow, unsupported language, and generation errors.
 
@@ -71,6 +74,7 @@ Exit criterion: representative meeting fixtures produce concise, non-repetitive 
 Goal: ship a technical preview that behaves predictably for a full meeting.
 
 - Add polished unavailable, permission, listening, processing, interrupted, and stopped states.
+- Add live non-content voice feedback with an input meter, speech-recognition activity cue, mute warning, microphone connection error, pause/resume, and stop controls.
 - Ensure cancellation and cleanup work from every state.
 - Run one-hour capture and insight-generation soak tests.
 - Verify bounded audio queues, text context, model context, and card count.

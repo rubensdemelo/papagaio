@@ -24,6 +24,9 @@ System/meeting audio ─┘             │
                                     v
                            live SwiftUI insight cards
 
+                       non-content voice feedback
+                       (input level + recognition activity)
+
 Old audio buffers and temporary text are continuously discarded.
 Stopping the session clears all remaining meeting data.
 ```
@@ -57,6 +60,8 @@ At startup, check:
 The current M1 composition root supplies `en-US` as the fixed meeting locale regardless of the Mac's system locale. A user-selectable locale remains outside the current interface.
 
 The app should guide the user when assets are downloadable and stop cleanly when the language or device is unsupported.
+
+The capture layer may expose bounded, content-free input telemetry: a normalized level, whether audio buffers have arrived, and whether sustained silence suggests a muted input. It must not expose audio samples or temporary speech text to the UI. Pausing cancels the active capture and speech tasks while retaining the in-memory session context; resuming creates fresh capture and speech tasks. Stopping still clears all session data.
 
 ### Rolling meeting context
 
@@ -98,6 +103,10 @@ InsightUpdate
 ```
 
 The app validates semantic constraints after generation, including nonempty text, known categories, bounded card counts, and the rule against guessed owners.
+
+### Local resource access
+
+The local resource-folder setting is independent of the listening pipeline. `LocalResourceFolderController` owns a single optional folder selection and uses `NSOpenPanel` for user-authorized selection. It stores only a read-only security-scoped bookmark in the app container, resolves and refreshes that bookmark on launch, and checks location existence, directory type, and readability without enumerating or opening child files. Losing access produces an explicit UI error and a re-selection path. No ingestion, retrieval, indexing, upload, or model call is part of this seam.
 
 ### Insight state
 

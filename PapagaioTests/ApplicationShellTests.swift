@@ -185,4 +185,69 @@ final class ApplicationShellTests: XCTestCase {
         XCTAssertTrue(detail.contains("free disk space"))
         XCTAssertFalse(detail.range(of: #"\b\d+(?:\.\d+)?\s*(?:GB|TB|gigabytes?)\b"#, options: .regularExpression) != nil)
     }
+
+    func testVoiceFeedbackUsesNonContentSpeechActivityInsteadOfTranscript() {
+        let presentation = VoiceFeedbackPresentation(
+            status: .listening,
+            feedback: SessionFeedbackSnapshot(
+                audioInput: AudioInputSnapshot(
+                    level: 0.65,
+                    hasReceivedAudio: true,
+                    isMuted: false
+                ),
+                finalizedSpeechSegmentCount: 3
+            )
+        )
+
+        XCTAssertEqual(presentation.condition, .live)
+        XCTAssertEqual(presentation.title, "Audio input live")
+        XCTAssertTrue(presentation.detail.contains("3 finalized segments"))
+        XCTAssertFalse(presentation.detail.contains("transcript"))
+    }
+
+    func testVoiceFeedbackDistinguishesMutedAndConnectionErrorStates() {
+        let muted = VoiceFeedbackPresentation(
+            status: .listening,
+            feedback: SessionFeedbackSnapshot(
+                audioInput: AudioInputSnapshot(
+                    level: 0,
+                    hasReceivedAudio: true,
+                    isMuted: true
+                ),
+                finalizedSpeechSegmentCount: 0
+            )
+        )
+        let connectionError = VoiceFeedbackPresentation(
+            status: .unavailable,
+            feedback: .inactive,
+            failure: .stage(.audioCapture, .failed)
+        )
+
+        XCTAssertEqual(muted.condition, .muted)
+        XCTAssertEqual(connectionError.condition, .connectionError)
+        XCTAssertNotEqual(muted.condition, connectionError.condition)
+    }
+
+    func testFakeControllerPausesAndResumesWithoutClearingInsights() async {
+        let card = InsightCard(
+            stableKey: "pause-card",
+            category: .decision,
+            text: "A decision",
+            explicitOwner: nil,
+            state: .new
+        )
+        let controller = FakeSessionController(cards: [card])
+
+        await controller.performPrimaryAction()
+        await controller.performPauseAction()
+
+        XCTAssertEqual(controller.status, .paused)
+        XCTAssertEqual(controller.cards, [card])
+        XCTAssertEqual(controller.pauseActionTitle, "Resume Listening")
+
+        await controller.performPauseAction()
+        XCTAssertEqual(controller.status, .listening)
+        XCTAssertEqual(controller.cards, [card])
+    }
+
 }

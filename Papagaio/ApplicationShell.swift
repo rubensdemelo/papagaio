@@ -12,24 +12,30 @@ enum FakeSessionStartOutcome: Sendable, Equatable {
 protocol SessionShellControlling: ObservableObject {
     var status: SessionStatus { get }
     var cards: [InsightCard] { get }
+    var feedback: SessionFeedbackSnapshot { get }
     var readiness: SessionReadiness? { get }
     var unavailableReason: UnavailableReason? { get }
     var failure: PipelineFailure? { get }
     var isPerformingPrimaryAction: Bool { get }
+    var isPerformingPauseAction: Bool { get }
     var primaryActionTitle: String { get }
+    var pauseActionTitle: String { get }
 
     func checkReadiness() async
     func performPrimaryAction() async
+    func performPauseAction() async
 }
 
 @MainActor
 final class FakeSessionController: SessionShellControlling {
     @Published private(set) var status: SessionStatus
     @Published private(set) var cards: [InsightCard]
+    @Published private(set) var feedback: SessionFeedbackSnapshot
     @Published private(set) var readiness: SessionReadiness?
     @Published private(set) var unavailableReason: UnavailableReason?
     @Published private(set) var failure: PipelineFailure?
     @Published private(set) var isPerformingPrimaryAction = false
+    @Published private(set) var isPerformingPauseAction = false
 
     private let startOutcome: FakeSessionStartOutcome
     private let transitionDelay: Duration
@@ -40,6 +46,7 @@ final class FakeSessionController: SessionShellControlling {
     init(
         status: SessionStatus = .stopped,
         cards: [InsightCard] = [],
+        feedback: SessionFeedbackSnapshot = .inactive,
         readiness: SessionReadiness? = nil,
         unavailableReason: UnavailableReason? = nil,
         failure: PipelineFailure? = nil,
@@ -48,6 +55,7 @@ final class FakeSessionController: SessionShellControlling {
     ) {
         self.status = status
         self.cards = cards
+        self.feedback = feedback
         self.readiness = readiness
         self.unavailableReason = unavailableReason
         self.failure = failure
@@ -61,9 +69,15 @@ final class FakeSessionController: SessionShellControlling {
             "Stop Listening"
         case .checkingAvailability:
             "Checking…"
+        case .paused:
+            "Stop Listening"
         case .stopped, .interrupted, .unavailable:
             "Start Listening"
         }
+    }
+
+    var pauseActionTitle: String {
+        status == .paused ? "Resume Listening" : "Pause Listening"
     }
 
     func checkReadiness() async {
@@ -76,6 +90,8 @@ final class FakeSessionController: SessionShellControlling {
         switch status {
         case .listening, .processing:
             await stop()
+        case .paused:
+            await stop()
         case .stopped, .interrupted, .unavailable:
             await start()
         case .checkingAvailability:
@@ -83,15 +99,30 @@ final class FakeSessionController: SessionShellControlling {
         }
     }
 
+    func performPauseAction() async {
+        guard !isPerformingPauseAction else { return }
+        guard status == .listening || status == .processing || status == .paused else {
+            return
+        }
+        isPerformingPauseAction = true
+        if transitionDelay > .zero {
+            try? await Task.sleep(for: transitionDelay)
+        }
+        status = status == .paused ? .listening : .paused
+        isPerformingPauseAction = false
+    }
+
     func inject(
         status: SessionStatus,
         cards: [InsightCard] = [],
+        feedback: SessionFeedbackSnapshot = .inactive,
         readiness: SessionReadiness? = nil,
         unavailableReason: UnavailableReason? = nil,
         failure: PipelineFailure? = nil
     ) {
         self.status = status
         self.cards = cards
+        self.feedback = feedback
         self.readiness = readiness
         self.unavailableReason = unavailableReason
         self.failure = failure
@@ -117,6 +148,14 @@ final class FakeSessionController: SessionShellControlling {
         switch startOutcome {
         case .listening:
             status = .listening
+            feedback = SessionFeedbackSnapshot(
+                audioInput: AudioInputSnapshot(
+                    level: 0,
+                    hasReceivedAudio: true,
+                    isMuted: false
+                ),
+                finalizedSpeechSegmentCount: 0
+            )
         case .unavailable(let reason):
             unavailableReason = reason
             status = .unavailable
@@ -134,6 +173,7 @@ final class FakeSessionController: SessionShellControlling {
         stopCount += 1
         isPerformingPrimaryAction = true
         cards.removeAll()
+        feedback = .inactive
         unavailableReason = nil
         failure = nil
         status = .stopped
@@ -157,13 +197,16 @@ final class FakeSessionController: SessionShellControlling {
 
 struct PapagaioView<Controller: SessionShellControlling>: View {
     @ObservedObject private var controller: Controller
+    @ObservedObject private var resourceFolderController: LocalResourceFolderController
     @StateObject private var noticePresenter: AppleIntelligenceDisabledNoticePresenter
 
     init(
         controller: Controller,
+        resourceFolderController: LocalResourceFolderController,
         noticeDefaults: UserDefaults = .standard
     ) {
         self.controller = controller
+        self.resourceFolderController = resourceFolderController
         _noticePresenter = StateObject(
             wrappedValue: AppleIntelligenceDisabledNoticePresenter(
                 defaults: noticeDefaults
@@ -180,8 +223,11 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
                 .padding(.vertical, 16)
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            LocalResourceFolderSection(controller: resourceFolderController)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
             Divider()
-            primaryAction
+            sessionControls
                 .padding(24)
         }
         .frame(minWidth: 480, idealWidth: 560, minHeight: 460, idealHeight: 620)
@@ -217,52 +263,80 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
             failure: controller.failure
         )
 
-        return HStack(spacing: 12) {
-            Image(systemName: presentation.symbolName)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(presentation.tint)
-                .frame(width: 28, height: 28)
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: presentation.symbolName)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(presentation.tint)
+                    .frame(width: 28, height: 28)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(presentation.title)
-                    .font(.headline)
-                Text(presentation.detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(presentation.title)
+                        .font(.headline)
+                    Text(presentation.detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Session status")
+            .accessibilityValue("\(presentation.title). \(presentation.detail)")
 
-            Spacer()
+            if controller.status == .listening || controller.status == .processing || controller.status == .paused
+                || controller.status == .interrupted || hasMicrophoneFailure {
+                VoiceFeedbackView(
+                    status: controller.status,
+                    feedback: controller.feedback,
+                    failure: controller.failure,
+                    unavailableReason: controller.unavailableReason
+                )
+            }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Session status")
-        .accessibilityValue("\(presentation.title). \(presentation.detail)")
+    }
+
+    private var hasMicrophoneFailure: Bool {
+        if controller.unavailableReason == .microphonePermissionDenied
+            || controller.unavailableReason == .audioInputUnavailable {
+            return true
+        }
+        if case .some(.stage(.audioCapture, _)) = controller.failure { return true }
+        if case .some(.unavailable(.microphonePermissionDenied)) = controller.failure { return true }
+        if case .some(.unavailable(.audioInputUnavailable)) = controller.failure { return true }
+        return false
     }
 
     @ViewBuilder
     private var content: some View {
         if controller.cards.isEmpty {
-            VStack(spacing: 18) {
-                SessionEmptyView(
-                    presentation: EmptyStatePresentation(
-                        status: controller.status,
-                        statusDetail: SessionStatusPresentation(
+            ScrollView {
+                VStack(spacing: 18) {
+                    SessionEmptyView(
+                        presentation: EmptyStatePresentation(
                             status: controller.status,
-                            unavailableReason: controller.unavailableReason,
-                            failure: controller.failure
-                        ).detail
+                            statusDetail: SessionStatusPresentation(
+                                status: controller.status,
+                                unavailableReason: controller.unavailableReason,
+                                failure: controller.failure
+                            ).detail
+                        )
                     )
-                )
 
-                if let readiness = controller.readiness, !readiness.isReady {
-                    PrerequisiteChecklistView(report: readiness)
-                        .padding(.horizontal, 24)
-
-                    if noticePresenter.isVisible {
-                        AppleIntelligenceDisabledNoticeView()
+                    if let readiness = controller.readiness, !readiness.isReady {
+                        PrerequisiteChecklistView(report: readiness)
                             .padding(.horizontal, 24)
+
+                        if noticePresenter.isVisible {
+                            AppleIntelligenceDisabledNoticeView()
+                                .padding(.horizontal, 24)
+                        }
                     }
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
             }
+            .accessibilityLabel("Listening readiness")
         } else {
             ScrollView {
                 LazyVStack(spacing: 12) {
@@ -274,6 +348,32 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
                 .padding(.bottom, 20)
             }
             .accessibilityLabel("Meeting insights")
+        }
+    }
+
+    private var sessionControls: some View {
+        HStack(spacing: 12) {
+            if controller.status == .listening || controller.status == .processing || controller.status == .paused {
+                Button {
+                    Task { await controller.performPauseAction() }
+                } label: {
+                    Label(
+                        controller.pauseActionTitle,
+                        systemImage: controller.status == .paused ? "play.fill" : "pause.fill"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(controller.isPerformingPrimaryAction || controller.isPerformingPauseAction)
+                .accessibilityLabel(controller.pauseActionTitle)
+                .accessibilityHint(
+                    controller.status == .paused
+                        ? "Resumes microphone input and speech recognition."
+                        : "Temporarily pauses microphone input without ending this session."
+                )
+            }
+
+            primaryAction
         }
     }
 
@@ -289,7 +389,7 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .keyboardShortcut("l", modifiers: [.command])
-        .disabled(controller.isPerformingPrimaryAction)
+        .disabled(controller.isPerformingPrimaryAction || controller.isPerformingPauseAction)
         .accessibilityLabel(controller.primaryActionTitle)
         .accessibilityHint(primaryActionHint)
         .help("\(controller.primaryActionTitle) (⌘L)")
@@ -298,6 +398,8 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
     private var primaryActionSymbol: String {
         switch controller.status {
         case .listening, .processing:
+            "stop.fill"
+        case .paused:
             "stop.fill"
         case .checkingAvailability:
             "hourglass"
@@ -310,6 +412,8 @@ struct PapagaioView<Controller: SessionShellControlling>: View {
         switch controller.status {
         case .listening, .processing:
             "Stops the current session and clears its insights. Keyboard shortcut Command-L."
+        case .paused:
+            "Stops the paused session and clears its insights. Keyboard shortcut Command-L."
         case .checkingAvailability:
             "Papagaio is checking whether listening can begin."
         case .stopped, .interrupted, .unavailable:
@@ -384,6 +488,256 @@ private struct AppleIntelligenceDisabledNoticeView: View {
         .accessibilityLabel(
             "\(AppleIntelligenceDisabledNoticePresentation.title). \(AppleIntelligenceDisabledNoticePresentation.detail)"
         )
+    }
+}
+
+private struct LocalResourceFolderSection: View {
+    @ObservedObject var controller: LocalResourceFolderController
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Label("Local resources", systemImage: "folder")
+                    .font(.headline)
+
+                Spacer()
+
+                Button(actionTitle, action: chooseFolder)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .accessibilityHint("Choose a local folder for manuals and support resources.")
+            }
+
+            Text("Optional folder for manuals and support resources. Papagaio only keeps access to the folder location; it does not read, search, or upload files yet. Use Docling later to convert manuals to Markdown.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            stateContent
+        }
+        .frame(maxWidth: 560, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Local resources")
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
+        switch controller.state {
+        case .empty:
+            Label(
+                "No resource folder selected.",
+                systemImage: "folder.badge.plus"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        case .selected(let selection):
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Folder ready", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+
+                Text(selection.path)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
+
+                Button("Remove Folder", action: controller.clearSelection)
+                    .buttonStyle(.link)
+                    .font(.caption)
+                    .accessibilityHint("Remove the saved local resource folder permission.")
+            }
+        case .error(let error):
+            VStack(alignment: .leading, spacing: 6) {
+                Label(error.title, systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.red)
+
+                Text(error.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(error.path)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    private var actionTitle: String {
+        controller.state.folderSelection == nil ? "Choose Folder" : "Change Folder"
+    }
+
+    private func chooseFolder() {
+        controller.chooseFolder()
+    }
+}
+
+enum VoiceFeedbackCondition: Equatable {
+    case waiting
+    case live
+    case muted
+    case paused
+    case connectionError
+}
+
+struct VoiceFeedbackPresentation: Equatable {
+    let condition: VoiceFeedbackCondition
+    let title: String
+    let detail: String
+    let symbolName: String
+    let tintName: SessionStatusPresentation.TintName
+
+    init(
+        status: SessionStatus,
+        feedback: SessionFeedbackSnapshot,
+        failure: PipelineFailure? = nil,
+        unavailableReason: UnavailableReason? = nil
+    ) {
+        let isAudioFailure: Bool = {
+            if case .some(.unavailable(.microphonePermissionDenied)) = failure { return true }
+            if case .some(.unavailable(.audioInputUnavailable)) = failure { return true }
+            if case .some(.stage(.audioCapture, _)) = failure { return true }
+            return unavailableReason == .microphonePermissionDenied
+                || unavailableReason == .audioInputUnavailable
+        }()
+
+        if isAudioFailure {
+            condition = .connectionError
+            title = "Microphone connection error"
+            detail = "Audio input stopped. Stop and start listening again."
+            symbolName = "mic.slash.fill"
+            tintName = .unavailable
+        } else if status == .paused {
+            condition = .paused
+            title = "Listening paused"
+            detail = "Microphone input and speech recognition are paused."
+            symbolName = "pause.circle.fill"
+            tintName = .warning
+        } else if feedback.audioInput.isMuted {
+            condition = .muted
+            title = "Microphone may be muted"
+            detail = "No input detected. Check the microphone mute button or input source."
+            symbolName = "mic.slash"
+            tintName = .warning
+        } else if feedback.audioInput.hasReceivedAudio {
+            condition = .live
+            title = "Audio input live"
+            detail = Self.speechDetail(for: feedback.finalizedSpeechSegmentCount)
+            symbolName = "mic.fill"
+            tintName = .active
+        } else {
+            condition = .waiting
+            title = "Listening for speech"
+            detail = "Microphone input is ready. Speak to generate live insights."
+            symbolName = "mic"
+            tintName = .active
+        }
+    }
+
+    private static func speechDetail(for count: Int) -> String {
+        guard count > 0 else {
+            return "Speech recognition is active. Temporary speech input stays on this Mac."
+        }
+        let noun = count == 1 ? "segment" : "segments"
+        return "Speech recognition is active. \(count) finalized \(noun) are informing insights."
+    }
+
+    var tint: Color {
+        switch tintName {
+        case .neutral: .secondary
+        case .active: .accentColor
+        case .warning: .orange
+        case .unavailable: .red
+        }
+    }
+}
+
+private struct VoiceFeedbackView: View {
+    let status: SessionStatus
+    let feedback: SessionFeedbackSnapshot
+    let failure: PipelineFailure?
+    let unavailableReason: UnavailableReason?
+
+    var body: some View {
+        let presentation = VoiceFeedbackPresentation(
+            status: status,
+            feedback: feedback,
+            failure: failure,
+            unavailableReason: unavailableReason
+        )
+
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                AudioInputMeterView(
+                    level: feedback.audioInput.level,
+                    isActive: presentation.condition == .live || presentation.condition == .waiting
+                )
+                .frame(width: 92, height: 38)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Label(presentation.title, systemImage: presentation.symbolName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(presentation.tint)
+                    Text(presentation.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            Label("Temporary, on-device processing. Nothing is saved.", systemImage: "lock.shield")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(presentation.tint.opacity(0.22), lineWidth: 1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Voice feedback")
+        .accessibilityValue("\(presentation.title). \(presentation.detail)")
+    }
+}
+
+private struct AudioInputMeterView: View {
+    let level: Float
+    let isActive: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 3) {
+            ForEach(0..<12, id: \.self) { index in
+                Capsule(style: .continuous)
+                    .fill(isActive ? Color.accentColor : Color.secondary.opacity(0.35))
+                    .frame(width: 4, height: barHeight(for: index))
+            }
+        }
+        .animation(.easeOut(duration: 0.12), value: level)
+        .accessibilityHidden(true)
+    }
+
+    private func barHeight(for index: Int) -> CGFloat {
+        let centerDistance = abs(Float(index) - 5.5) / 5.5
+        let threshold = centerDistance * 0.38
+        let normalized = max(0, min(1, (level - threshold) / 0.62))
+        return 6 + CGFloat(normalized) * 28
     }
 }
 
@@ -553,6 +907,11 @@ struct SessionStatusPresentation: Equatable {
             detail = "Refreshing live insights."
             symbolName = "sparkles"
             tintName = .active
+        case .paused:
+            title = "Paused"
+            detail = "Audio input is paused. Your session remains open."
+            symbolName = "pause.circle.fill"
+            tintName = .warning
         case .interrupted:
             title = "Interrupted"
             detail = "Listening stopped unexpectedly. Start again when ready."
@@ -604,6 +963,10 @@ struct EmptyStatePresentation: Equatable {
             title = "Insights are on the way"
             detail = "Papagaio is processing the latest meeting context."
             symbolName = "sparkles"
+        case .paused:
+            title = "Listening is paused"
+            detail = "Resume listening when you are ready."
+            symbolName = "pause.circle"
         case .interrupted:
             title = "Listening was interrupted"
             detail = "Start listening to try again."
@@ -724,11 +1087,17 @@ private extension InsightCard {
 }
 
 #Preview("Stopped") {
-    PapagaioView(controller: FakeSessionController())
+    PapagaioView(
+        controller: FakeSessionController(),
+        resourceFolderController: LocalResourceFolderController()
+    )
 }
 
 #Preview("Listening — empty") {
-    PapagaioView(controller: FakeSessionController(status: .listening))
+    PapagaioView(
+        controller: FakeSessionController(status: .listening),
+        resourceFolderController: LocalResourceFolderController()
+    )
 }
 
 #Preview("Insight cards") {
@@ -758,7 +1127,8 @@ private extension InsightCard {
                     state: .resolved
                 ),
             ]
-        )
+        ),
+        resourceFolderController: LocalResourceFolderController()
     )
 }
 
@@ -768,7 +1138,8 @@ private extension InsightCard {
             status: .unavailable,
             unavailableReason: .appleIntelligenceDisabled,
             startOutcome: .unavailable(.appleIntelligenceDisabled)
-        )
+        ),
+        resourceFolderController: LocalResourceFolderController()
     )
 }
 
@@ -778,6 +1149,7 @@ private extension InsightCard {
             status: .interrupted,
             failure: .stage(.audioCapture, .interrupted),
             startOutcome: .interrupted
-        )
+        ),
+        resourceFolderController: LocalResourceFolderController()
     )
 }

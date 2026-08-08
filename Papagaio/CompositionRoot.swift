@@ -6,10 +6,12 @@ import Observation
 final class LiveSessionController: SessionShellControlling {
     @Published private(set) var status: SessionStatus = .stopped
     @Published private(set) var cards: [InsightCard] = []
+    @Published private(set) var feedback: SessionFeedbackSnapshot = .inactive
     @Published private(set) var readiness: SessionReadiness?
     @Published private(set) var unavailableReason: UnavailableReason?
     @Published private(set) var failure: PipelineFailure?
     @Published private(set) var isPerformingPrimaryAction = false
+    @Published private(set) var isPerformingPauseAction = false
 
     let lifecycle: SessionLifecycleCoordinator
     let insightStore: InMemoryInsightStore
@@ -23,12 +25,19 @@ final class LiveSessionController: SessionShellControlling {
         self.lifecycle = lifecycle
         self.insightStore = insightStore
         observeInsightStore()
-        refreshSnapshot()
+        status = lifecycle.status
+        readiness = lifecycle.readiness
+        cards = insightStore.cards
+        Task { @MainActor [weak self] in
+            await self?.refreshSnapshot()
+        }
     }
 
     var primaryActionTitle: String {
         switch status {
         case .listening, .processing:
+            "Stop Listening"
+        case .paused:
             "Stop Listening"
         case .checkingAvailability:
             "Checking…"
@@ -37,9 +46,13 @@ final class LiveSessionController: SessionShellControlling {
         }
     }
 
+    var pauseActionTitle: String {
+        status == .paused ? "Resume Listening" : "Pause Listening"
+    }
+
     func checkReadiness() async {
         _ = await lifecycle.checkReadiness()
-        refreshSnapshot()
+        await refreshSnapshot()
     }
 
     func performPrimaryAction() async {
@@ -52,6 +65,9 @@ final class LiveSessionController: SessionShellControlling {
 
         switch lifecycle.status {
         case .listening, .processing:
+            await lifecycle.stop()
+            stopMonitoring()
+        case .paused:
             await lifecycle.stop()
             stopMonitoring()
         case .stopped, .interrupted, .unavailable:
@@ -68,18 +84,42 @@ final class LiveSessionController: SessionShellControlling {
             break
         }
 
-        refreshSnapshot()
+        await refreshSnapshot()
+    }
+
+    func performPauseAction() async {
+        guard !isPerformingPauseAction else { return }
+        guard lifecycle.status == .listening || lifecycle.status == .processing || lifecycle.status == .paused else {
+            return
+        }
+
+        isPerformingPauseAction = true
+        defer { isPerformingPauseAction = false }
+
+        if lifecycle.status == .paused {
+            do {
+                try await lifecycle.resume()
+                startMonitoring()
+            } catch let resumeFailure {
+                apply(resumeFailure)
+                stopMonitoring()
+            }
+        } else {
+            await lifecycle.pause()
+            startMonitoring()
+        }
+        await refreshSnapshot()
     }
 
     private func startMonitoring() {
         stopMonitoring()
         monitoringTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
-                self.refreshSnapshot()
+                await self.refreshSnapshot()
                 switch self.lifecycle.status {
                 case .stopped, .interrupted, .unavailable:
                     return
-                case .checkingAvailability, .listening, .processing:
+                case .checkingAvailability, .listening, .processing, .paused:
                     try? await Task.sleep(for: .milliseconds(50))
                 }
             }
@@ -91,13 +131,14 @@ final class LiveSessionController: SessionShellControlling {
         monitoringTask = nil
     }
 
-    private func refreshSnapshot() {
+    private func refreshSnapshot() async {
         status = lifecycle.status
         readiness = lifecycle.readiness
         failure = lifecycle.failure
         if case let .unavailable(reason)? = failure {
             unavailableReason = reason
         }
+        feedback = await lifecycle.feedbackSnapshot()
         cards = insightStore.cards
     }
 

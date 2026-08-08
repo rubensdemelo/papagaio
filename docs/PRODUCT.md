@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Papagaio is a macOS app for live meeting insights. It listens to microphone and meeting audio and surfaces the information a user is likely to need while the conversation is still happening.
+Papagaio is a macOS live incident copilot for technical-support meetings. It listens to microphone and meeting audio and surfaces the technical information a support engineer is likely to need while a client troubleshooting call is still happening.
 
 The insight stream is the product. Audio capture and speech-to-text are temporary implementation stages, not user-facing features.
 
@@ -10,21 +10,27 @@ The insight stream is the product. Audio capture and speech-to-text are temporar
 
 Papagaio is for people who want to stay engaged in meetings without operating a recorder, reading a transcript, or taking continuous notes. The first release is a focused technical preview for macOS 26+ on Macs that support Apple Intelligence.
 
-It is not an enterprise recording platform, collaboration workspace, or meeting archive.
+It is not an enterprise recording platform, collaboration workspace, meeting archive, diagnostic authority, or autonomous operator.
 
 ## Core experience
 
 The app opens to one clear listening control and a small status indicator.
+
+While listening, Papagaio shows a live microphone input level and non-content speech-recognition activity status so the user can tell that capture is active without exposing a transcript. The user can pause and resume capture without ending the session, or stop listening to clear the session. A concise cue explains that processing is temporary and on-device.
 
 When the user starts listening:
 
 1. Papagaio captures system/meeting audio and microphone audio.
 2. Apple's Speech framework converts the live audio into temporary finalized text.
 3. A bounded rolling text window is sent to Apple's on-device system language model.
-4. The model returns structured insight updates.
-5. The UI adds, updates, or removes insight cards as the meeting develops.
+4. The model returns structured incident-signal and insight updates.
+5. The UI adds, updates, or removes concise cards as the support call develops.
+
+For the incident-copilot evaluation target, the useful signal set is symptoms, errors, product/version/environment facts, recent changes, failed checks, and unanswered diagnostic questions. Papagaio may formulate intent for trusted local manuals and runbooks and offer evidence-grounded possible investigation directions and next-best questions. It does not state diagnoses as facts, infer action owners, fabricate source evidence, or execute automatic actions.
 
 The app does not display a live transcript. Temporary transcript text is discarded as it leaves the rolling context window and is discarded completely when listening stops.
+
+If no input is detected for a sustained period, the interface warns that the microphone may be muted. Capture or microphone failures are shown as explicit connection errors rather than as an apparently active listening state.
 
 ## Insight categories
 
@@ -51,6 +57,12 @@ When Foundation Models reports that Apple Intelligence is disabled, Papagaio sho
 Speech recognition is a separate native stage. SpeechAnalyzer and SpeechTranscriber perform on-device speech-to-text suitable for meetings; Foundation Models then interprets that temporary text.
 
 The current M1 implementation uses English (US) (`en-US`) for both speech recognition and meeting understanding regardless of the Mac's system locale. Locale selection is not yet a user-facing control.
+
+## Local resource folder
+
+Papagaio lets the user optionally choose one local folder containing manuals and support resources. The app validates that the selected location exists, is a folder, and is readable, then retains a read-only security-scoped bookmark so access can be restored across launches in the macOS sandbox. The UI shows the selected path and provides change, remove, and re-select actions when access is lost.
+
+This preparation step does not read, index, search, upload, or ingest folder contents. Users may use Docling separately to convert manuals to Markdown; document retrieval and external AI remain outside this implementation.
 
 ## Data lifecycle
 
