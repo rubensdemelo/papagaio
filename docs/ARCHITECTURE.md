@@ -36,6 +36,8 @@ Use ScreenCaptureKit to capture meeting/system audio and microphone audio. Exclu
 
 The app requests the required microphone and screen-capture permissions and makes their status visible. The capture layer must handle device removal, output changes, sleep and wake, permission revocation, and the selected meeting source disappearing.
 
+Development builds use a persistent Apple Development code-signing identity configured through the ignored `Config/Development.xcconfig`, so macOS privacy grants survive ordinary source rebuilds. The identity is managed by Xcode and is not stored in the repository. A changed bundle identifier, signing authority, or user privacy decision remains a legitimate reason for macOS to request access again.
+
 The MVP does not save audio or create a recording output. Capture callbacks perform minimal work and hand bounded buffers to the speech pipeline without file I/O or blocking UI work.
 
 If one ScreenCaptureKit stream cannot provide the required microphone and system-audio behavior on the minimum supported macOS release, use AVAudioEngine for the microphone while keeping the same downstream interface.
@@ -74,7 +76,7 @@ The first implementation should trigger insight analysis on a small batch of new
 
 Use the Foundation Models framework's `SystemLanguageModel`, which provides access to the on-device model that powers Apple Intelligence.
 
-When the app window loads and before starting a session, inspect all session prerequisites and retain a combined readiness report for the UI. Repeat the check during session preflight so changes made in System Settings are reflected. The preflight checks microphone permission and capture availability, speech recognition availability and assets, model availability, and locale support. Foundation Models exposes device eligibility, Apple Intelligence not enabled, and model-not-ready states; it does not expose organization policy as a separate public availability reason. For the not-enabled state, guide the user to align the Mac and Siri languages, enable Apple Intelligence, and contact the administrator if the managed-device restriction remains. An undetermined microphone permission is allowed to continue so the system permission prompt can appear; other blocking prerequisites stop startup. The UI must distinguish at least:
+When the app window loads and before starting a session, inspect all session prerequisites and retain a combined readiness report for the UI. Repeat the check during session preflight so changes made in System Settings are reflected. The preflight checks microphone permission and capture availability, speech recognition availability and assets, model availability, and locale support. Foundation Models exposes device eligibility, Apple Intelligence not enabled, and model-not-ready states; it does not expose organization policy as a separate public availability reason. For the not-enabled state, guide the user to align the Mac and Siri languages, enable Apple Intelligence, and contact the administrator if the managed-device restriction remains. Papagaio shows the not-enabled guidance as a one-time, non-blocking notice that enabling Apple Intelligence downloads on-device models and requires several gigabytes of free disk space. An undetermined microphone permission is allowed to continue so the system permission prompt can appear; other blocking prerequisites stop startup. The UI must distinguish at least:
 
 - Available.
 - Device not eligible.

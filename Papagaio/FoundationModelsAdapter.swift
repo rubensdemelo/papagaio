@@ -106,11 +106,17 @@ struct AppleFoundationModelsRuntime: FoundationModelsRuntime {
     }
 
     func availability() async -> Availability {
-        FoundationModelsAvailabilityMapper.map(model.availability)
+        guard #available(macOS 26.0, *) else {
+            return .unavailable(.languageModelDeviceNotEligible)
+        }
+        return FoundationModelsAvailabilityMapper.map(model.availability)
     }
 
     func supportsLocale(identifier: String) async -> Bool {
-        model.supportsLocale(Locale(identifier: identifier))
+        guard #available(macOS 26.0, *) else {
+            return false
+        }
+        return model.supportsLocale(Locale(identifier: identifier))
     }
 
     func makeSession(instructions: String) async -> any FoundationModelsSession {
@@ -412,4 +418,32 @@ actor FoundationModelsInsightGenerator: SessionInsightGenerator {
         }
         return .stage(.insightGeneration, .failed)
     }
+}
+
+actor UnavailableFoundationModelsInsightGenerator: SessionInsightGenerator {
+    private let reason: UnavailableReason
+
+    init(reason: UnavailableReason) {
+        self.reason = reason
+    }
+
+    func availability() async -> Availability {
+        .unavailable(reason)
+    }
+
+    func supportsLocale(identifier: String) async -> Bool {
+        false
+    }
+
+    func startSession(localeIdentifier: String) async throws(PipelineFailure) {
+        throw .unavailable(reason)
+    }
+
+    func generate(from batch: MeetingContextBatch) async throws(PipelineFailure) -> [InsightUpdate] {
+        throw .unavailable(reason)
+    }
+
+    func stop() async {}
+
+    func cancel() async {}
 }
