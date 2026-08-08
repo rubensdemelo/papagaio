@@ -102,7 +102,7 @@ Development builds must use a stable Apple Development signing identity so macOS
 
 ```sh
 xcodebuild \
-  -project Papagaio.xcodeproj \
+  -project Rio.xcodeproj \
   -scheme Rio \
   -configuration Debug \
   -destination 'platform=macOS' \
@@ -110,7 +110,7 @@ xcodebuild \
   build
 
 xcodebuild \
-  -project Papagaio.xcodeproj \
+  -project Rio.xcodeproj \
   -scheme Rio \
   -configuration Release \
   -destination 'platform=macOS' \
@@ -118,14 +118,14 @@ xcodebuild \
   build
 
 xcodebuild \
-  -project Papagaio.xcodeproj \
+  -project Rio.xcodeproj \
   -scheme Rio \
   -configuration Debug \
   -destination 'platform=macOS' \
   test
 
 xcodebuild \
-  -project Papagaio.xcodeproj \
+  -project Rio.xcodeproj \
   -scheme Rio \
   -configuration Release \
   -destination 'platform=macOS' \
